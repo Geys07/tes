@@ -1199,9 +1199,38 @@
         }
         
         // Save attendance record to Google Sheets
-        async function saveAttendance(studentName, status, note) {
-            showLoading();
-            
+        async function saveAttendanceToSheet(studentName, status, note) {
+  const endpoint = "https://script.google.com/macros/s/AKfycb....../exec"; // Ganti URL sesuai Apps Script Anda
+
+  // Siapkan data JSON
+  const data = {
+    tanggal: formatDateForStorage(),      // misal '2025-07-28'
+    guru: selectedTeacher,                // isi sesuai variabel Anda
+    kelas: selectedClass,
+    namaSiswa: studentName,
+    status: status,
+    catatan: note
+  };
+
+  // Kirim fetch POST dengan mode 'no-cors'
+  try {
+    await fetch(endpoint, {
+      method: "POST",
+      mode: "no-cors", // agar tidak error CORS (tapi response tidak bisa dibaca)
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(data)
+    });
+
+      console.log('Data berhasil dikirim ke Google Sheets');
+    // Tidak bisa baca respons jika no-cors, asumsikan sukses
+    return true;
+  } catch (err) {
+    console.error("Gagal kirim ke Google Sheet:", err);
+    return false;
+  }
+}    
             const today = formatDateForStorage();
             
             // Create attendance record
@@ -2076,6 +2105,7 @@ else if (classNumber && classNumber !== '') {
             
             const monthName = getMonthName(month);
             const year = new Date().getFullYear();
+            const now = new Date();
             const tanggalCetak = `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
             const reportTitle = `Rekap Absensi - ${monthName} ${year}`;
             const reportTeacherText = teacher || 'Semua Guru';
@@ -2101,7 +2131,6 @@ else if (classNumber && classNumber !== '') {
             doc.text(`Guru: ${reportTeacherText}`, 20, 44);
             doc.text(`Kelas: ${reportClassText}`, 20, 50);
             doc.text(`Bulan: ${monthName} ${year}`, 20, 50);
-            doc.text(`Tanggal Cetak: ${tanggalCetak}`, 20, 62);
             
             // Get filtered students
             let filteredStudents = studentsData;
