@@ -1333,6 +1333,8 @@
                 
                 const csvText = await response.text();
                 attendanceData = parseCSV(csvText);
+
+                console.log('attendanceData:', attendanceData);
                 
                 // Map CSV column names to our expected property names
                 attendanceData = attendanceData.map(record => ({
@@ -1883,7 +1885,7 @@ filteredAttendanceData = attendanceData.filter(record => {
 
     // PATCH: Prioritaskan exact match nama kelas
     if (className && className !== '') {
-        if (record.class !== className) match = false;
+        if (record.class.toLowerCase() !== className.toLowerCase()) match = false;
     } else if (classNumber && classNumber !== '') {
         const recordClassNumber = extractClassNumber(record.class);
         if (recordClassNumber !== classNumber) match = false;
@@ -1891,6 +1893,8 @@ filteredAttendanceData = attendanceData.filter(record => {
 
     return match;
 });
+
+    console.log('filteredAttendanceData:', filteredAttendanceData);        
             
             // Sort by date (newest first)
             filteredAttendanceData.sort((a, b) => {
@@ -1996,7 +2000,7 @@ else if (classNumber && classNumber !== '') {
             r.date === dateStr && 
             r.student === studentName &&
             (teacher ? r.teacher === teacher : true) &&
-            r.class === className // <-- exact match
+            r.class.toLowerCase() === className.toLowerCase() // <-- exact match
         );
     } else if (classNumber && classNumber !== '') {
         record = attendanceData.find(r => 
