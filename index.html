@@ -1223,42 +1223,24 @@
       body: JSON.stringify(data)
     });
 
-      console.log('Data berhasil dikirim ke Google Sheets');
+    console.log('Data berhasil dikirim ke Google Sheets');
     // Tidak bisa baca respons jika no-cors, asumsikan sukses
     return true;
   } catch (err) {
     console.error("Gagal kirim ke Google Sheet:", err);
     return false;
   }
-}    
-            const today = formatDateForStorage();
-            
-            // Create attendance record
-            const record = {
-                date: today,
-                teacher: selectedTeacher,
-                class: selectedClass,
-                student: studentName,
-                status: status,
-                note: note || ''
-            };
-            
-            try {
-                // Check if record already exists
-                const existingIndex = attendanceData.findIndex(r => 
-                    r.date === today && 
-                    r.teacher === selectedTeacher && 
-                    r.student === studentName
-                );
-                
-                if (existingIndex >= 0) {
-                    // Update existing record
-                    attendanceData[existingIndex] = record;
-                } else {
-                    // Add new record
-                    attendanceData.push(record);
-                }
-        }
+}
+
+// Cara pemanggilan (misal saat tombol absen diklik)
+async function handleAttendance(studentName, status, note) {
+  const success = await saveAttendanceToSheet(studentName, status, note);
+  if (success) {
+    alert('Absen berhasil!');
+  } else {
+    alert('Gagal menyimpan absen!');
+  }
+}
         
         // Add cache busting parameter to URL to prevent caching
         function addCacheBuster(url) {
