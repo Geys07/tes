@@ -1732,6 +1732,10 @@ async function handleAttendance(studentName, status, note) {
                     if (status !== 'alpha') {
                         const saveBtn = card.querySelector('.save-btn');
                         saveBtn.onclick = function() {
+                            saveAttendanceToSheet(studentName, status, note);
+    // atau jika ingin sekaligus pop-up sukses/gagal:
+    // handleAttendance(studentName, status, note);
+};
                             const note = noteInput.value.trim();
                             
                             // Validate note input (required for all except alpha)
@@ -2101,7 +2105,7 @@ else if (classNumber && classNumber !== '') {
             doc.setFont('helvetica', 'normal');
             doc.text(`Guru: ${reportTeacherText}`, 20, 44);
             doc.text(`Kelas: ${reportClassText}`, 20, 50);
-            doc.text(`Bulan: ${monthName} ${year}`, 20, 50);
+            doc.text(`Bulan: ${monthName} ${year}`, 20, 56);
             doc.text(`Tanggal Cetak: ${tanggalCetak}`, 20, 62);
             
             // Get filtered students
@@ -2114,7 +2118,7 @@ else if (classNumber && classNumber !== '') {
             // Apply class filtering - prioritize className over classNumber
             if (className) {
                 // Use exact match for class name
-                filteredStudents = filteredStudents.filter(student => student.kelas.toLowerCase() === className.toLowerCase);
+                filteredStudents = filteredStudents.filter(student => student.kelas.toLowerCase() === className.toLowerCase();
             } else if (classNumber) {
                 filteredStudents = filteredStudents.filter(student => {
                     const studentClassNumber = extractClassNumber(student.kelas);
@@ -2231,7 +2235,7 @@ else if (classNumber && classNumber !== '') {
             doc.autoTable({
                 head: [headers],
                 body: rows,
-                startY: 68,
+                startY: 70,
                 theme: 'grid',
                 styles: {
                     fontSize: 7,
