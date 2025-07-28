@@ -1694,7 +1694,7 @@ async function handleAttendance(studentName, status, note) {
                         noteContainer.style.display = 'none'; // Hide for alpha
                         
                         // For alpha status, save immediately without note
-                        saveAttendance(studentName, status, "").then(success => {
+                        saveAttendanceToSheet(studentName, status, "").then(success => {
                             if (success) {
                                 // Update the UI to show the saved status
                                 const studentContent = card.querySelector('.student-content');
@@ -2272,7 +2272,7 @@ else if (classNumber && classNumber !== '') {
 
             doc.text(`Karawang, ${tanggalCetak}`, 230, yFooter);
             doc.text('Guru Kelas', 230, yFooter + 7);
-            doc.text(guru, 230, yFooter + 25);
+            doc.text(reportTeacherText, 230, yFooter + 25);
             doc.line(220, yFooter + 28, 280, yFooter + 28);
             
             // Save PDF
