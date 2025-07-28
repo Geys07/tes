@@ -2113,7 +2113,7 @@ else if (classNumber && classNumber !== '') {
             // Apply class filtering - prioritize className over classNumber
             if (className) {
                 // Use exact match for class name
-                filteredStudents = filteredStudents.filter(student => student.kelas.toLowerCase() === className.toLowerCase();
+                filteredStudents = filteredStudents.filter(student => student.kelas.toLowerCase() === className.toLowerCase());
             } else if (classNumber) {
                 filteredStudents = filteredStudents.filter(student => {
                     const studentClassNumber = extractClassNumber(student.kelas);
