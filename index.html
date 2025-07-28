@@ -1888,13 +1888,6 @@ filteredAttendanceData = attendanceData.filter(record => {
         const recordClassNumber = extractClassNumber(record.class);
         if (recordClassNumber !== classNumber) match = false;
     }
-    // Jika className tidak dipilih, filter by classNumber
-    else if (classNumber && classNumber !== '') {
-        const recordClassNumber = extractClassNumber(record.class);
-        if (recordClassNumber !== classNumber) {
-            match = false;
-        }
-    }
 
     return match;
 });
@@ -1997,6 +1990,7 @@ else if (classNumber && classNumber !== '') {
                     let record = null;
                     
                     // First try to find an exact match with class name if specified
+                     // First try to find an exact match with class name if specified
                     if (className && className !== '') {
         record = attendanceData.find(r => 
             r.date === dateStr && 
@@ -2018,23 +2012,6 @@ else if (classNumber && classNumber !== '') {
             (teacher ? r.teacher === teacher : true)
         );
     }
-                    // If no className specified or no record found with className, try with classNumber
-                    else if (classNumber) {
-                        record = attendanceData.find(r => 
-                            r.date === dateStr && 
-                            r.student === studentName &&
-                            (teacher ? r.teacher === teacher : true) &&
-                            extractClassNumber(r.class) === classNumber
-                        );
-                    } 
-                    // If no class filters specified
-                    else {
-                        record = attendanceData.find(r => 
-                            r.date === dateStr && 
-                            r.student === studentName &&
-                            (teacher ? r.teacher === teacher : true)
-                        );
-                    }
                     
                     let statusCode = '-';
                     let statusClass = 'status--';
