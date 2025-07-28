@@ -2076,6 +2076,7 @@ else if (classNumber && classNumber !== '') {
             
             const monthName = getMonthName(month);
             const year = new Date().getFullYear();
+            const tanggalCetak = `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
             const reportTitle = `Rekap Absensi - ${monthName} ${year}`;
             const reportTeacherText = teacher || 'Semua Guru';
             const reportClassText = className || (classNumber ? `Kelas ${classNumber}` : 'Semua Kelas');
@@ -2100,6 +2101,7 @@ else if (classNumber && classNumber !== '') {
             doc.text(`Guru: ${reportTeacherText}`, 20, 44);
             doc.text(`Kelas: ${reportClassText}`, 20, 50);
             doc.text(`Bulan: ${monthName} ${year}`, 20, 50);
+            doc.text(`Tanggal Cetak: ${tanggalCetak}`, 20, 62);
             
             // Get filtered students
             let filteredStudents = studentsData;
