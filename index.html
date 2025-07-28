@@ -494,36 +494,44 @@
             margin-right: 8px;
         }
         
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-            
-            #reportContainer, #reportContainer * {
-                visibility: visible;
-            }
-            
-            #reportContainer {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                background-color: white;
-            }
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  #reportContainer, #reportContainer * {
+    visibility: visible !important;
+  }
+  #reportContainer {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 297mm !important; /* A4 landscape width */
+    min-height: 210mm !important; /* A4 landscape height */
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    font-size: 11pt !important;
+  }
             
             .no-print {
                 display: none !important;
             }
             
             .monthly-report-table {
-                box-shadow: none;
-                border: 1px solid #e2e8f0;
-            }
-            
-            .header-gradient, .footer {
-                display: none;
-            }
-        }
+    width: 100% !important;
+    font-size: 10pt !important;
+    border: 1px solid #000 !important;
+  }
+  .header-gradient, .footer, .no-print {
+    display: none !important;
+  }
+  .admin-panel {
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
         
         .selected-option {
             position: relative;
@@ -1541,47 +1549,10 @@
                     fetchAttendanceData().then(() => {
                         renderStudents();
                         
-                        // Set up auto-submit timer for alpha attendance
-                        setupAutoSubmitTimer();
                     });
                 });
             });
         }
-        
-        // Setup auto-submit timer for alpha attendance
-        function setupAutoSubmitTimer() {
-            // Clear any existing timer
-            if (autoSubmitTimer) {
-                clearTimeout(autoSubmitTimer);
-            }
-            
-            // Get current time
-            const now = new Date();
-            
-            // Calculate time until 23:59
-            const endOfDay = new Date(now);
-            endOfDay.setHours(23, 59, 0, 0);
-            
-            const timeUntilEndOfDay = endOfDay - now;
-            
-            // Set timer to submit alpha attendance at 23:59
-            if (timeUntilEndOfDay > 0) {
-                autoSubmitTimer = setTimeout(() => {
-                    submitAlphaAttendance();
-                }, timeUntilEndOfDay);
-                
-                console.log(`Auto-submit timer set for ${new Date(now.getTime() + timeUntilEndOfDay).toLocaleTimeString()}`);
-            }
-        }
-        
-        // Submit alpha attendance for students who haven't submitted
-        async function submitAlphaAttendance() {
-            console.log('Auto-submitting alpha attendance...');
-            
-            if (!selectedTeacher || !selectedClass) {
-                console.log('No teacher or class selected, skipping auto-submit');
-                return;
-            }
             
             // Get today's date
             const today = formatDateForStorage();
@@ -1592,10 +1563,6 @@
                 const studentClassNumber = extractClassNumber(studentClass);
                 return student['nama guru'] === selectedTeacher && studentClassNumber === selectedClass;
             });
-            
-            // Check each student and submit alpha if no attendance recorded
-            for (const student of filteredStudents) {
-                const studentName = student['nama siswa'];
                 
                 // Check if attendance is already recorded for today
                 const isRecorded = isAttendanceRecorded(studentName, today);
@@ -2141,13 +2108,20 @@ else if (classNumber && classNumber !== '') {
             // Add header
             doc.setFontSize(16);
             doc.setFont('helvetica', 'bold');
-            doc.text(reportTitle, 15, 15);
-            
+            doc.text('REKAP ABSENSI BULANAN GEMAR MENGAJI', 148, 18, { align: 'center' });
             doc.setFontSize(12);
             doc.setFont('helvetica', 'normal');
-            doc.text(`Guru: ${reportTeacherText}`, 15, 25);
-            doc.text(`Kelas: ${reportClassText}`, 15, 32);
-            doc.text(`Bulan: ${monthName} ${year}`, 15, 39);
+            doc.text('SDIT Harapan Umat Karawang', 148, 26, { align: 'center' });
+            doc.setFontSize(10);
+            doc.text('Jl. Pakuncen No. 01, Desa Sukaharja, Kec. Teluk Jambe Timur', 148, 32, { align: 'center' });
+            doc.setLineWidth(0.5);
+            doc.line(15, 36, 281, 36);
+            
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Guru: ${reportTeacherText}`, 20, 44);
+            doc.text(`Kelas: ${reportClassText}`, 20, 50);
+            doc.text(`Bulan: ${monthName} ${year}`, 20, 50);
             
             // Get filtered students
             let filteredStudents = studentsData;
@@ -2159,7 +2133,7 @@ else if (classNumber && classNumber !== '') {
             // Apply class filtering - prioritize className over classNumber
             if (className) {
                 // Use exact match for class name
-                filteredStudents = filteredStudents.filter(student => student.kelas === className);
+                filteredStudents = filteredStudents.filter(student => student.kelas.toLowerCase() === className.toLowerCase);
             } else if (classNumber) {
                 filteredStudents = filteredStudents.filter(student => {
                     const studentClassNumber = extractClassNumber(student.kelas);
@@ -2210,31 +2184,27 @@ else if (classNumber && classNumber !== '') {
                     let record = null;
                     
                     // First try to find an exact match with class name if specified
-                    if (className) {
-                        record = attendanceData.find(r => 
-                            r.date === dateStr && 
-                            r.student === studentName &&
-                            (teacher ? r.teacher === teacher : true) &&
-                            r.class === className
-                        );
-                    } 
-                    // If no className specified or no record found with className, try with classNumber
-                    else if (classNumber) {
-                        record = attendanceData.find(r => 
-                            r.date === dateStr && 
-                            r.student === studentName &&
-                            (teacher ? r.teacher === teacher : true) &&
-                            extractClassNumber(r.class) === classNumber
-                        );
-                    } 
-                    // If no class filters specified
-                    else {
-                        record = attendanceData.find(r => 
-                            r.date === dateStr && 
-                            r.student === studentName &&
-                            (teacher ? r.teacher === teacher : true)
-                        );
-                    }
+                    if (className && className !== '') {
+    record = attendanceData.find(r => 
+        r.date === dateStr && 
+        r.student === studentName &&
+        (teacher ? r.teacher === teacher : true) &&
+        r.class.toLowerCase() === className.toLowerCase()
+    );
+} else if (classNumber && classNumber !== '') {
+    record = attendanceData.find(r => 
+        r.date === dateStr && 
+        r.student === studentName &&
+        (teacher ? r.teacher === teacher : true) &&
+        extractClassNumber(r.class) === classNumber
+    );
+} else {
+    record = attendanceData.find(r => 
+        r.date === dateStr && 
+        r.student === studentName &&
+        (teacher ? r.teacher === teacher : true)
+    );
+}
                     
                     let statusCode = '-';
                     
@@ -2280,37 +2250,42 @@ else if (classNumber && classNumber !== '') {
             doc.autoTable({
                 head: [headers],
                 body: rows,
-                startY: 45,
+                startY: 68,
                 theme: 'grid',
                 styles: {
-                    fontSize: 8,
-                    cellPadding: 1
+                    fontSize: 9,
+                    cellPadding: 1.5,
+                    halign: 'center',
+                    valign: 'middle'
                 },
                 headStyles: {
-                    fillColor: [59, 130, 246],
-                    textColor: 255,
+                    fillColor: [255, 255, 255],
+                    textColor: [0,0,0],
                     fontStyle: 'bold'
                 },
                 columnStyles: {
-                    0: { cellWidth: 40 } // Make the name column wider
-                }
+                    0: { cellWidth: 50, halign: 'left' }, // Make the name column wider
+                },
+                tableLineColor: [0, 0, 0],
+                tableLineWidth: 0.3,
             });
             
             // Add legend
-            const legendY = doc.lastAutoTable.finalY + 10;
+            let yKet = doc.lastAutoTable.finalY + 6;
             doc.setFontSize(10);
-            doc.text('Keterangan:', 15, legendY);
-            doc.text('H = Hadir', 15, legendY + 7);
-            doc.text('S = Sakit', 45, legendY + 7);
-            doc.text('I = Izin', 75, legendY + 7);
-            doc.text('- = Alpha', 105, legendY + 7);
+            doc.text('Keterangan: H = Hadir, S = Sakit, I = Izin, - = Alpha', 20, yKet);
             
             // Add footer
-            const footerY = legendY + 20;
-            const today = new Date();
-            const formattedDate = `${today.getDate()} ${getMonthName(String(today.getMonth() + 1).padStart(2, '0'))} ${today.getFullYear()}`;
-            
-            doc.text(`Dicetak pada: ${formattedDate}`, 15, footerY);
+            let yFooter = yKet + 20;
+            doc.setFontSize(11);
+            doc.text('Mengetahui,', 30, yFooter);
+            doc.text('Kepala Sekolah', 30, yFooter + 7);
+            doc.text('(.............................)', 30, yFooter + 25);
+
+            doc.text(`Karawang, ${tanggalCetak}`, 230, yFooter);
+            doc.text('Guru Kelas', 230, yFooter + 7);
+            doc.text(guru, 230, yFooter + 25);
+            doc.line(220, yFooter + 28, 280, yFooter + 28);
             
             // Save PDF
             const filename = `rekap_absensi_${monthName.toLowerCase()}_${year}_${reportClassText.replace(/\s+/g, '_').toLowerCase()}.pdf`;
@@ -2400,7 +2375,6 @@ else if (classNumber && classNumber !== '') {
                 page2.classList.add('fade-in');
                 
                 // Setup auto-submit timer for alpha attendance
-                setupAutoSubmitTimer();
             } else if (pageNumber === 3) {
                 page3.classList.remove('hidden');
                 page3.classList.add('fade-in');
