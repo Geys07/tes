@@ -1552,29 +1552,7 @@
                     });
                 });
             });
-        }
-            
-            // Get today's date
-            const today = formatDateForStorage();
-            
-            // Filter students based on selected teacher and class number
-            const filteredStudents = studentsData.filter(student => {
-                const studentClass = student.kelas;
-                const studentClassNumber = extractClassNumber(studentClass);
-                return student['nama guru'] === selectedTeacher && studentClassNumber === selectedClass;
-            });
-                
-                // Check if attendance is already recorded for today
-                const isRecorded = isAttendanceRecorded(studentName, today);
-                
-                if (!isRecorded) {
-                    console.log(`Submitting alpha for ${studentName}`);
-                    await saveAttendance(studentName, 'alpha', 'Auto-submitted as alpha');
-                }
-            }
-            
-            console.log('Auto-submit completed');
-        }
+        }  
         
         // Render Students List with new design
         async function renderStudents() {
