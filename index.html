@@ -2246,13 +2246,13 @@ else if (classNumber && classNumber !== '') {
                 columnStyles: {
     0: { cellWidth: 40, halign: 'left' }, // Nama Siswa
     // Kolom tanggal (1-31) lebih kecil
-    ...Object.fromEntries(Array(daysInMonth).fill().map((_, i) => [i + 1, { cellWidth: 7 }])),
+    ...Object.fromEntries(Array(daysInMonth).fill().map((_, i) => [i + 1, { cellWidth: 5 }])),
     // Kolom ringkasan lebih kecil
-    [daysInMonth + 1]: { cellWidth: 8 }, // H
-    [daysInMonth + 2]: { cellWidth: 8 }, // S
-    [daysInMonth + 3]: { cellWidth: 8 }, // I
-    [daysInMonth + 4]: { cellWidth: 8 }, // A
-    [daysInMonth + 5]: { cellWidth: 12 }, // %
+    [daysInMonth + 1]: { cellWidth: 5 }, // H
+    [daysInMonth + 2]: { cellWidth: 5 }, // S
+    [daysInMonth + 3]: { cellWidth: 5 }, // I
+    [daysInMonth + 4]: { cellWidth: 5 }, // A
+    [daysInMonth + 5]: { cellWidth: 10 }, // %
   },
   tableWidth: 'auto', // biar muat semua kolom
 });
