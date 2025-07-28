@@ -1258,17 +1258,6 @@
                     // Add new record
                     attendanceData.push(record);
                 }
-                
-                // Simulate a network delay
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                hideLoading();
-                return true;
-            } catch (error) {
-                console.error('Error saving attendance:', error);
-                hideLoading();
-                return false;
-            }
         }
         
         // Add cache busting parameter to URL to prevent caching
