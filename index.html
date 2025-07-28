@@ -788,7 +788,7 @@
                         </div>
                     </div>
                     
-                    <div class="filter-group" id="filterClassNameContainer" style="display: none;">
+                    <div class="filter-group" id="filterClassNameContainer">
                         <label for="filterClassName" class="filter-label">Nama Kelas</label>
                         <select id="filterClassName" class="filter-select">
                             <option value="">Semua Nama Kelas</option>
@@ -853,30 +853,6 @@
                             </td>
                         </tr>
                     </table>
-                </div>
-                
-                <div class="mt-6">
-                    <h4 class="text-lg font-semibold text-blue-800 mb-3">Statistik Kehadiran</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="bg-white p-4 rounded-lg shadow">
-                            <h5 class="font-medium text-gray-700 mb-2">Persentase Kehadiran per Siswa</h5>
-                            <div class="h-64" id="attendanceChart">
-                                <!-- Chart will be rendered here -->
-                                <div class="w-full h-full flex items-center justify-center">
-                                    <div class="w-full h-48 rounded shimmer"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg shadow">
-                            <h5 class="font-medium text-gray-700 mb-2">Distribusi Status Kehadiran</h5>
-                            <div class="h-64" id="statusChart">
-                                <!-- Chart will be rendered here -->
-                                <div class="w-full h-full flex items-center justify-center">
-                                    <div class="w-full h-48 rounded shimmer"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
             
@@ -1018,6 +994,7 @@
         let recordsPerPage = 10;
         let filteredAttendanceData = [];
         let classesData = new Map(); // Map to store class data (number -> array of full class names)
+        let classNamesByNumber = new Map(); // Map to store class names by class number
         let attendanceChartInstance = null;
         let statusChartInstance = null;
         let selectedStudentStatus = {}; // To track selected status for each student
@@ -1205,6 +1182,14 @@
             return /^\d+$/.test(className);
         }
         
+        // Check if class name contains both numbers and text
+        function isComplexClassName(className) {
+            if (!className) return false;
+            
+            // Check if it contains at least one digit and one letter
+            return /\d/.test(className) && /[a-zA-Z]/.test(className);
+        }
+        
         // Save attendance record to Google Sheets
         async function saveAttendance(studentName, status, note) {
             showLoading();
@@ -1297,6 +1282,7 @@
                 studentsData = parseCSV(csvText);
                 
                 classesData.clear();
+                classNamesByNumber.clear();
                 
                 // Process class data for filtering
                 studentsData.forEach(student => {
@@ -1308,9 +1294,15 @@
                             classesData.set(classNumber, new Set());
                         }
                         
-                        // Only add to the set if it's not a simple number
-                        if (!isSimpleClassNumber(className)) {
-                            classesData.get(classNumber).add(className);
+                        // Add all class names to the set
+                        classesData.get(classNumber).add(className);
+                        
+                        // Store complex class names (with both numbers and text) separately
+                        if (isComplexClassName(className)) {
+                            if (!classNamesByNumber.has(classNumber)) {
+                                classNamesByNumber.set(classNumber, new Set());
+                            }
+                            classNamesByNumber.get(classNumber).add(className);
                         }
                     }
                 });
@@ -1427,6 +1419,9 @@
                 const selectedClassNumber = this.value;
                 updateClassNameDropdown(selectedClassNumber);
             });
+            
+            // Initially hide class name container
+            filterClassNameContainer.style.display = 'none';
         }
         
         // Update Class Name Dropdown based on selected Class Number
@@ -1444,8 +1439,8 @@
                 return;
             }
             
-            // Get class names for the selected class number
-            const classNames = classesData.get(classNumber);
+            // Get complex class names for the selected class number
+            const classNames = classNamesByNumber.get(classNumber);
             
             if (!classNames || classNames.size === 0) {
                 filterClassNameContainer.style.display = 'none';
@@ -1872,33 +1867,37 @@
                 reportContainer.style.display = 'none';
             }
             
-            filteredAttendanceData = attendanceData.filter(record => {
-                let match = true;
-                
-                if (month && !record.date.startsWith(`${new Date().getFullYear()}-${month}`)) {
-                    match = false;
-                }
-                
-                if (teacher && record.teacher !== teacher) {
-                    match = false;
-                }
-                
-                // If className is selected, use it for filtering
-                if (className) {
-                    if (record.class !== className) {
-                        match = false;
-                    }
-                }
-                // Otherwise, if only classNumber is selected, filter by class number
-                else if (classNumber) {
-                    const recordClassNumber = extractClassNumber(record.class);
-                    if (recordClassNumber !== classNumber) {
-                        match = false;
-                    }
-                }
-                
-                return match;
-            });
+            // Filter attendance data based on selected filters
+filteredAttendanceData = attendanceData.filter(record => {
+    let match = true;
+
+    // Filter by month
+    if (month && !record.date.startsWith(`${new Date().getFullYear()}-${month}`)) {
+        match = false;
+    }
+
+    // Filter by teacher
+    if (teacher && record.teacher !== teacher) {
+        match = false;
+    }
+
+    // PATCH: Prioritaskan exact match nama kelas
+    if (className && className !== '') {
+        if (record.class !== className) match = false;
+    } else if (classNumber && classNumber !== '') {
+        const recordClassNumber = extractClassNumber(record.class);
+        if (recordClassNumber !== classNumber) match = false;
+    }
+    // Jika className tidak dipilih, filter by classNumber
+    else if (classNumber && classNumber !== '') {
+        const recordClassNumber = extractClassNumber(record.class);
+        if (recordClassNumber !== classNumber) {
+            match = false;
+        }
+    }
+
+    return match;
+});
             
             // Sort by date (newest first)
             filteredAttendanceData.sort((a, b) => {
@@ -1931,18 +1930,22 @@
             // Get students based on filters
             let filteredStudents = studentsData;
             
+            // Filter by teacher if specified
             if (teacher) {
                 filteredStudents = filteredStudents.filter(student => student['nama guru'] === teacher);
             }
             
-            if (className) {
-                filteredStudents = filteredStudents.filter(student => student.kelas === className);
-            } else if (classNumber) {
-                filteredStudents = filteredStudents.filter(student => {
-                    const studentClassNumber = extractClassNumber(student.kelas);
-                    return studentClassNumber === classNumber;
-                });
-            }
+            // Filter by className jika dipilih
+if (className && className !== '') {
+    filteredStudents = filteredStudents.filter(student => student.kelas === className);
+}
+// Jika tidak, filter by classNumber
+else if (classNumber && classNumber !== '') {
+    filteredStudents = filteredStudents.filter(student => {
+        const studentClassNumber = extractClassNumber(student.kelas);
+        return studentClassNumber === classNumber;
+    });
+}
             
             // Sort students alphabetically
             filteredStudents.sort((a, b) => a['nama siswa'].localeCompare(b['nama siswa']));
@@ -1968,7 +1971,6 @@
             filteredStudents.forEach(student => {
                 const studentName = student['nama siswa'];
                 const studentClass = student.kelas;
-                const studentTeacher = student['nama guru'];
                 
                 tableHTML += `<tr><td class="student-name">${studentName}</td>`;
                 
@@ -1992,13 +1994,47 @@
                     }
                     
                     // Find attendance record for this student on this date
-                    const record = attendanceData.find(r => 
-                        r.date === dateStr && 
-                        r.student === studentName &&
-                        (teacher ? r.teacher === teacher : true) &&
-                        (className ? r.class === className : 
-                         classNumber ? extractClassNumber(r.class) === classNumber : true)
-                    );
+                    let record = null;
+                    
+                    // First try to find an exact match with class name if specified
+                    if (className && className !== '') {
+        record = attendanceData.find(r => 
+            r.date === dateStr && 
+            r.student === studentName &&
+            (teacher ? r.teacher === teacher : true) &&
+            r.class === className // <-- exact match
+        );
+    } else if (classNumber && classNumber !== '') {
+        record = attendanceData.find(r => 
+            r.date === dateStr && 
+            r.student === studentName &&
+            (teacher ? r.teacher === teacher : true) &&
+            extractClassNumber(r.class) === classNumber
+        );
+    } else {
+        record = attendanceData.find(r => 
+            r.date === dateStr && 
+            r.student === studentName &&
+            (teacher ? r.teacher === teacher : true)
+        );
+    }
+                    // If no className specified or no record found with className, try with classNumber
+                    else if (classNumber) {
+                        record = attendanceData.find(r => 
+                            r.date === dateStr && 
+                            r.student === studentName &&
+                            (teacher ? r.teacher === teacher : true) &&
+                            extractClassNumber(r.class) === classNumber
+                        );
+                    } 
+                    // If no class filters specified
+                    else {
+                        record = attendanceData.find(r => 
+                            r.date === dateStr && 
+                            r.student === studentName &&
+                            (teacher ? r.teacher === teacher : true)
+                        );
+                    }
                     
                     let statusCode = '-';
                     let statusClass = 'status--';
@@ -2049,180 +2085,6 @@
             
             // Update the table
             monthlyReportTable.innerHTML = tableHTML;
-            
-            // Generate charts
-            generateAttendanceCharts(filteredStudents, month, year, teacher, classNumber, className);
-        }
-        
-        // Generate attendance charts
-        function generateAttendanceCharts(students, month, year, teacher, classNumber, className) {
-            // Prepare data for charts
-            const studentNames = students.map(student => student['nama siswa']);
-            const attendancePercentages = [];
-            const statusCounts = { hadir: 0, sakit: 0, izin: 0, alpha: 0 };
-            
-            students.forEach(student => {
-                const studentName = student['nama siswa'];
-                let hadirCount = 0;
-                let sakitCount = 0;
-                let izinCount = 0;
-                let alphaCount = 0;
-                let totalDays = 0;
-                
-                // Count days in month excluding weekends
-                const daysInMonth = getDaysInMonth(year, parseInt(month));
-                for (let day = 1; day <= daysInMonth; day++) {
-                    const dateStr = `${year}-${month}-${String(day).padStart(2, '0')}`;
-                    const date = new Date(dateStr);
-                    const today = new Date();
-                    
-                    // Skip future dates and weekends
-                    if (date > today || date.getDay() === 0 || date.getDay() === 6) {
-                        continue;
-                    }
-                    
-                    totalDays++;
-                    
-                    // Find attendance record for this student on this date
-                    const record = attendanceData.find(r => 
-                        r.date === dateStr && 
-                        r.student === studentName &&
-                        (teacher ? r.teacher === teacher : true) &&
-                        (className ? r.class === className : 
-                         classNumber ? extractClassNumber(r.class) === classNumber : true)
-                    );
-                    
-                    if (record) {
-                        if (record.status === 'hadir') {
-                            hadirCount++;
-                            statusCounts.hadir++;
-                        } else if (record.status === 'sakit') {
-                            sakitCount++;
-                            statusCounts.sakit++;
-                        } else if (record.status === 'izin') {
-                            izinCount++;
-                            statusCounts.izin++;
-                        } else if (record.status === 'alpha') {
-                            alphaCount++;
-                            statusCounts.alpha++;
-                        }
-                    } else {
-                        // If no record found and date is in the past, count as alpha
-                        alphaCount++;
-                        statusCounts.alpha++;
-                    }
-                }
-                
-                const percentage = totalDays > 0 ? Math.round((hadirCount / totalDays) * 100) : 0;
-                attendancePercentages.push(percentage);
-            });
-            
-            // Create attendance percentage chart
-            const attendanceCtx = document.getElementById('attendanceChart');
-            
-            if (attendanceChartInstance) {
-                attendanceChartInstance.destroy();
-            }
-            
-            attendanceChartInstance = new Chart(attendanceCtx, {
-                type: 'bar',
-                data: {
-                    labels: studentNames,
-                    datasets: [{
-                        label: 'Persentase Kehadiran',
-                        data: attendancePercentages,
-                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                        borderColor: 'rgba(59, 130, 246, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100,
-                            title: {
-                                display: true,
-                                text: 'Persentase (%)'
-                            }
-                        },
-                        x: {
-                            ticks: {
-                                autoSkip: true,
-                                maxRotation: 45,
-                                minRotation: 45
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.raw}%`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-            
-            // Create status distribution chart
-            const statusCtx = document.getElementById('statusChart');
-            
-            if (statusChartInstance) {
-                statusChartInstance.destroy();
-            }
-            
-            statusChartInstance = new Chart(statusCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Hadir', 'Sakit', 'Izin', 'Alpha'],
-                    datasets: [{
-                        data: [
-                            statusCounts.hadir,
-                            statusCounts.sakit,
-                            statusCounts.izin,
-                            statusCounts.alpha
-                        ],
-                        backgroundColor: [
-                            'rgba(34, 197, 94, 0.7)',
-                            'rgba(234, 179, 8, 0.7)',
-                            'rgba(59, 130, 246, 0.7)',
-                            'rgba(239, 68, 68, 0.7)'
-                        ],
-                        borderColor: [
-                            'rgba(34, 197, 94, 1)',
-                            'rgba(234, 179, 8, 1)',
-                            'rgba(59, 130, 246, 1)',
-                            'rgba(239, 68, 68, 1)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'right'
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = total > 0 ? Math.round((context.raw / total) * 100) : 0;
-                                    return `${context.label}: ${context.raw} (${percentage}%)`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
         }
         
         // Render Admin Data
@@ -2313,7 +2175,9 @@
                 filteredStudents = filteredStudents.filter(student => student['nama guru'] === teacher);
             }
             
+            // Apply class filtering - prioritize className over classNumber
             if (className) {
+                // Use exact match for class name
                 filteredStudents = filteredStudents.filter(student => student.kelas === className);
             } else if (classNumber) {
                 filteredStudents = filteredStudents.filter(student => {
@@ -2362,13 +2226,34 @@
                     }
                     
                     // Find attendance record for this student on this date
-                    const record = attendanceData.find(r => 
-                        r.date === dateStr && 
-                        r.student === studentName &&
-                        (teacher ? r.teacher === teacher : true) &&
-                        (className ? r.class === className : 
-                         classNumber ? extractClassNumber(r.class) === classNumber : true)
-                    );
+                    let record = null;
+                    
+                    // First try to find an exact match with class name if specified
+                    if (className) {
+                        record = attendanceData.find(r => 
+                            r.date === dateStr && 
+                            r.student === studentName &&
+                            (teacher ? r.teacher === teacher : true) &&
+                            r.class === className
+                        );
+                    } 
+                    // If no className specified or no record found with className, try with classNumber
+                    else if (classNumber) {
+                        record = attendanceData.find(r => 
+                            r.date === dateStr && 
+                            r.student === studentName &&
+                            (teacher ? r.teacher === teacher : true) &&
+                            extractClassNumber(r.class) === classNumber
+                        );
+                    } 
+                    // If no class filters specified
+                    else {
+                        record = attendanceData.find(r => 
+                            r.date === dateStr && 
+                            r.student === studentName &&
+                            (teacher ? r.teacher === teacher : true)
+                        );
+                    }
                     
                     let statusCode = '-';
                     
@@ -2743,43 +2628,16 @@
                     fetchStudents(),
                     fetchTeachers()
                 ]).then(() => {
-                    // kode lanjutan jika ada
+                    filterAttendanceData();
+                    showNotification('success', 'Data berhasil diperbarui!');
+                    stopRefreshAnimation(this);
+                }).catch(error => {
+                    console.error('Error refreshing data:', error);
+                    showNotification('error', 'Gagal memperbarui data. Silakan coba lagi.');
+                    stopRefreshAnimation(this);
                 });
             });
         });
     </script>
-                    
-    <script>
-    (function(){
-      function c(){
-        var b=a.contentDocument||a.contentWindow.document;
-        if(b){
-          var d=b.createElement('script');
-          d.innerHTML="window.__CF$cv$params={r:'965d4ba8d4f5e780',t:'MTc1MzYzMTQ1OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";
-          b.getElementsByTagName('head')[0].appendChild(d)
-        }
-      }
-      if(document.body){
-        var a=document.createElement('iframe');
-        a.height=1;
-        a.width=1;
-        a.style.position='absolute';
-        a.style.top=0;
-        a.style.left=0;
-        a.style.border='none';
-        a.style.visibility='hidden';
-        document.body.appendChild(a);
-        if('loading'!==document.readyState) c();
-        else if(window.addEventListener) document.addEventListener('DOMContentLoaded',c);
-        else{
-          var e=document.onreadystatechange||function(){};
-          document.onreadystatechange=function(b){
-            e(b);
-            'loading'!==document.readyState&&(document.onreadystatechange=e,c())
-          }
-        }
-      }
-    })();
-    </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'966457682771ea76',t:'MTc1MzcwNTM0MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
