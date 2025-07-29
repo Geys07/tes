@@ -1208,7 +1208,7 @@
         }
         
         // Save attendance record to Google Sheets using iframe method
-        async function saveAttendance(studentName, status, note) {
+        async function saveAttendance(studentName, status, note, studentClass) {
             showLoading('Menyimpan data absensi...');
             addDebugLog('Saving attendance', { studentName, status, note });
             
@@ -1218,7 +1218,7 @@
             const record = {
                 date: today,
                 teacher: selectedTeacher,
-                className: selectedClass, // Send the full class name
+                class: studentClass, // Send the full class name
                 student: studentName,
                 status: status,
                 note: note || ''
@@ -1296,7 +1296,7 @@
         }
         
         // Alternative method using XMLHttpRequest
-        async function saveAttendanceXHR(studentName, status, note) {
+        async function saveAttendanceXHR(studentName, status, note, studentClass) {
             showLoading('Menyimpan data absensi...');
             addDebugLog('Saving attendance with XHR', { studentName, status, note });
             
@@ -1306,7 +1306,7 @@
             const record = {
                 date: today,
                 teacher: selectedTeacher,
-                class: selectedClass, // Send the full class name
+                class: studentClass, // Send the full class name
                 student: studentName,
                 status: status,
                 note: note || ''
@@ -1607,16 +1607,11 @@
                     
                     // Get unique classes for this teacher
                     const teacherClasses = new Set();
-                    
-                    studentsData.forEach(student => {
-                        if (student['nama guru'] === selectedTeacher) {
-                            const className = student.kelas;
-                            const classNumber = extractClassNumber(className);
-                            if (classNumber) {
-                                teacherClasses.add(classNumber);
-                            }
-                        }
-                    });
+studentsData.forEach(student => {
+    if (student['nama guru'] === selectedTeacher) {
+        teacherClasses.add(student.kelas); // simpan nama kelas lengkap
+    }
+});
                     
                     // Render class options
                     renderClassOptions(Array.from(teacherClasses));
@@ -1849,7 +1844,7 @@
         }
 
         /// Save attendance with full class name
-                            saveAttendanceXHR(studentName, status, note).then(success => {
+                            saveAttendanceXHR(studentName, status, note, student.kelas).then(success => {
             if (success) {
                 // Update the UI to show the saved status
                 const studentContent = card.querySelector('.student-content');
