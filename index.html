@@ -1045,55 +1045,20 @@
         const refreshAdminDataBtn = document.getElementById('refreshAdminDataBtn');
         const loadingIndicator = document.getElementById('loadingIndicator');
         
-        // Debug functions
-        function addDebugLog(message, data = null) {
-            const timestamp = new Date().toISOString();
-            let logEntry = `[${timestamp}] ${message}`;
-            
-            if (data) {
-                if (typeof data === 'object') {
-                    logEntry += '\n' + JSON.stringify(data, null, 2);
-                } else {
-                    logEntry += '\n' + data;
-                }
-            }
-            
-            debugLog.push(logEntry);
-            updateDebugContent();
-        }
+        function addDebugLog(message, data) {
+    if (console && console.log) {
+        console.log('[DEBUG]', message, data || '');
+    }
+}
+
         
-        function updateDebugContent() {
-            debugContent.textContent = debugLog.join('\n\n');
-            debugContent.scrollTop = debugContent.scrollHeight;
-        }
-        
-        function clearDebugLog() {
-            debugLog = [];
-            updateDebugContent();
-        }
-        
-        function openDebugModal() {
-            debugModal.style.display = 'block';
-            setTimeout(() => {
-                debugModal.classList.add('show');
-            }, 10);
-        }
-        
-        function closeDebugModal() {
-            debugModal.classList.remove('show');
-            setTimeout(() => {
-                debugModal.style.display = 'none';
-            }, 300);
-        }
-        
-        // Show/hide loading overlay
-        function showLoading(message = 'Memuat data...') {
-            loadingText.textContent = message;
-            loadingOverlay.style.display = 'flex';
+        // Show/hide loading indicator
+        function showLoading() {
+            loadingIndicator.classList.add('show');
         }
         
         function hideLoading() {
-            loadingOverlay.style.display = 'none';
+            loadingIndicator.classList.remove('show');
         }
         
         // Format current date for display
