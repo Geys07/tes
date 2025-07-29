@@ -1636,7 +1636,7 @@ renderClassOptions(Array.from(teacherClassNumbers));
             // Sort classes numerically
             classes.sort((a, b) => parseInt(a) - parseInt(b));
             
-            classOptions.innerHTML = classes.map(className => `
+            classOptions.innerHTML = classes.map(classNumber => `
                 <button class="class-option bg-blue-50 hover:bg-blue-100 text-blue-800 font-medium py-4 px-6 rounded-lg transition duration-300 shadow-sm transform hover:scale-105" data-class="${classNumber}">
                     Kelas ${classNumber}
                 </button>
