@@ -986,6 +986,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        // Google Apps Script Web App URL - Replace with your actual deployed script URL
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw2itMBTKF49ugT-xbEUY1PI_Tpgg89W3Wmy8gB4bCv0XWNms0mXo-zHQYmoqZx6IeuHA/exec';
         // Google Sheets CSV URLs
         const TEACHERS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTgKecXy9cdc6rsoGURVhUJDJB6hloM7RC4P2cvC3bFw7ezL73KJFSgNURKL33YBndg5pBm9fZST7Hb/pub?output=csv';
         const STUDENTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRo9cNtTtxitP8XPlHXbnT-458XW2xzsCUNAkFY-M9FmxzRJrSXKHeJfFYoTfLXfpSS0ICcKQYUkIEm/pub?output=csv';
@@ -1198,49 +1200,148 @@
             return /\d/.test(className) && /[a-zA-Z]/.test(className);
         }
         
-        // Save attendance record to Google Sheets
-        async function saveAttendanceToSheet(studentName, status, note) {
-  const endpoint = "https://script.google.com/macros/s/AKfycbw2itMBTKF49ugT-xbEUY1PI_Tpgg89W3Wmy8gB4bCv0XWNms0mXo-zHQYmoqZx6IeuHA/exec"; // Ganti URL sesuai Apps Script Anda
-
-  // Siapkan data JSON
-  const data = {
-    tanggal: formatDateForStorage(),      // misal '2025-07-28'
-    guru: selectedTeacher,                // isi sesuai variabel Anda
-    kelas: selectedClass,
-    namaSiswa: studentName,
-    status: status,
-    catatan: note
-  };
-
-  // Kirim fetch POST dengan mode 'no-cors'
-  try {
-    await fetch(endpoint, {
-      method: "POST",
-      mode: "no-cors", // agar tidak error CORS (tapi response tidak bisa dibaca)
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(data)
-    });
-
-    console.log('Data berhasil dikirim ke Google Sheets');
-    // Tidak bisa baca respons jika no-cors, asumsikan sukses
-    return true;
-  } catch (err) {
-    console.error("Gagal kirim ke Google Sheet:", err);
-    return false;
-  }
-}
-
-// Cara pemanggilan (misal saat tombol absen diklik)
-async function handleAttendance(studentName, status, note) {
-  const success = await saveAttendanceToSheet(studentName, status, note);
-  if (success) {
-    alert('Absen berhasil!');
-  } else {
-    alert('Gagal menyimpan absen!');
-  }
-}
+        // Save attendance record to Google Sheets using iframe method
+        async function saveAttendance(studentName, status, note) {
+            showLoading('Menyimpan data absensi...');
+            addDebugLog('Saving attendance', { studentName, status, note });
+            
+            const today = formatDateForStorage();
+            
+            // Create attendance record
+            const record = {
+                date: today,
+                teacher: selectedTeacher,
+                class: selectedClass, // Send the full class name
+                student: studentName,
+                status: status,
+                note: note || ''
+            };
+            
+            try {
+                // Create a form element to submit data
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = SCRIPT_URL;
+                form.target = 'hidden-iframe';
+                form.style.display = 'none';
+                
+                // Add action parameter
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'saveAttendance';
+                form.appendChild(actionInput);
+                
+                // Add data parameters
+                for (const [key, value] of Object.entries(record)) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = key;
+                    input.value = value;
+                    form.appendChild(input);
+                }
+                
+                // Create hidden iframe for form submission
+                let iframe = document.getElementById('hidden-iframe');
+                if (!iframe) {
+                    iframe = document.createElement('iframe');
+                    iframe.name = 'hidden-iframe';
+                    iframe.id = 'hidden-iframe';
+                    iframe.style.display = 'none';
+                    document.body.appendChild(iframe);
+                }
+                
+                // Add form to document and submit
+                document.body.appendChild(form);
+                
+                // Create a promise that resolves when the iframe loads
+                const submissionPromise = new Promise((resolve) => {
+                    iframe.onload = () => {
+                        resolve(true);
+                    };
+                    
+                    // Set a timeout in case the iframe doesn't load
+                    setTimeout(() => {
+                        resolve(true); // Assume success after timeout
+                    }, 3000);
+                });
+                
+                form.submit();
+                
+                // Wait for iframe to load or timeout
+                await submissionPromise;
+                
+                // Remove form from document
+                document.body.removeChild(form);
+                
+                // Add the record to our local array
+                attendanceData.push(record);
+                
+                addDebugLog('Attendance saved successfully', record);
+                hideLoading();
+                return true;
+            } catch (error) {
+                console.error('Error saving attendance:', error);
+                addDebugLog('Error saving attendance', error.toString());
+                hideLoading();
+                return false;
+            }
+        }
+        
+        // Alternative method using XMLHttpRequest
+        async function saveAttendanceXHR(studentName, status, note) {
+            showLoading('Menyimpan data absensi...');
+            addDebugLog('Saving attendance with XHR', { studentName, status, note });
+            
+            const today = formatDateForStorage();
+            
+            // Create attendance record
+            const record = {
+                date: today,
+                teacher: selectedTeacher,
+                class: selectedClass, // Send the full class name
+                student: studentName,
+                status: status,
+                note: note || ''
+            };
+            
+            return new Promise((resolve) => {
+                const xhr = new XMLHttpRequest();
+                
+                // Create form data
+                const formData = new FormData();
+                formData.append('action', 'saveAttendance');
+                
+                // Add all record fields
+                for (const [key, value] of Object.entries(record)) {
+                    formData.append(key, value);
+                }
+                
+                xhr.open('POST', SCRIPT_URL, true);
+                
+                xhr.onload = function() {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        // Add the record to our local array
+                        attendanceData.push(record);
+                        addDebugLog('XHR Attendance saved successfully', record);
+                        hideLoading();
+                        resolve(true);
+                    } else {
+                        addDebugLog('XHR Error saving attendance', xhr.responseText);
+                        hideLoading();
+                        resolve(false);
+                    }
+                };
+                
+                xhr.onerror = function() {
+                    addDebugLog('XHR Network error saving attendance');
+                    hideLoading();
+                    resolve(false);
+                };
+                
+                xhr.send(formData);
+            });
+        }
         
         // Add cache busting parameter to URL to prevent caching
         function addCacheBuster(url) {
@@ -1694,7 +1795,7 @@ async function handleAttendance(studentName, status, note) {
                         noteContainer.style.display = 'none'; // Hide for alpha
                         
                         // For alpha status, save immediately without note
-                        saveAttendanceToSheet(studentName, status, "").then(success => {
+                        saveAttendanceXHR(studentName, status, "", student.kelas).then(success => {
                             if (success) {
                                 // Update the UI to show the saved status
                                 const studentContent = card.querySelector('.student-content');
@@ -1740,15 +1841,8 @@ async function handleAttendance(studentName, status, note) {
             return;
         }
 
-        // Get the full class name from the student data
-        const studentData = filteredStudents.find(s => s['nama siswa'] === studentName);
-        const fullClassName = studentData ? studentData.kelas : selectedClass;
-
-        // Save attendance (gunakan saveAttendanceToSheet atau handleAttendance)
-        saveAttendanceToSheet(studentName, status, note)
-        // atau jika ingin pop-up sukses/gagal otomatis:
-        // handleAttendance(studentName, status, note)
-        .then(success => {
+        /// Save attendance with full class name
+                            saveAttendanceXHR(studentName, status, note).then(success => {
             if (success) {
                 // Update the UI to show the saved status
                 const studentContent = card.querySelector('.student-content');
