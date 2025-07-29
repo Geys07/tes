@@ -1759,82 +1759,79 @@ renderClassOptions(Array.from(teacherClassNumbers));
             
             studentList.innerHTML = html;
             
-            // Add event listeners to attendance options
-            document.querySelectorAll('.attendance-option').forEach(button => {
-                button.addEventListener('click', function() {
-                    const studentName = this.getAttribute('data-student');
-                    const status = this.getAttribute('data-status');
-                    const card = this.closest('.student-card');
-                    const noteContainer = card.querySelector('.note-container');
-                    const noteInput = card.querySelector('.note-input');
-                    
-                    // Check if this option is already selected
-                    const isSelected = this.classList.contains('selected-option');
-                    
-                    // Clear any previously selected options in this card
-                    card.querySelectorAll('.attendance-option').forEach(opt => {
-                        opt.classList.remove('selected-option');
-                    });
-                    
-                    // If the option was already selected, deselect it and hide note container
-                    if (isSelected) {
-                        noteContainer.style.display = 'none';
-                        delete selectedStudentStatus[studentName];
-                        return;
-                    }
-                    
-                    // Mark this option as selected
-                    this.classList.add('selected-option');
-                    selectedStudentStatus[studentName] = status;
-                    
-                    // Show note input with appropriate placeholder
-                    noteContainer.style.display = 'block';
-                    if (status === 'hadir') {
-                        noteInput.placeholder = 'Contoh: Buku 1 Halaman 1, Tahfidz Surah Al-Fatihah';
-                    } else if (status === 'sakit') {
-                        noteInput.placeholder = 'Contoh: Demam';
-                    } else if (status === 'izin') {
-                        noteInput.placeholder = 'Contoh: Acara Keluarga';
-                    } else {
-                        noteContainer.style.display = 'none'; // Hide for alpha
-                        
-                        // For alpha status, save immediately without note
-                        saveAttendanceXHR(studentName, status, "", student.kelas).then(success => {
-                            if (success) {
-                                // Update the UI to show the saved status
-                                const studentContent = card.querySelector('.student-content');
-                                studentContent.innerHTML = `
-                                    <div class="flex flex-col">
-                                        <div class="flex items-center justify-center mb-3">
-                                            <span class="attendance-badge inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                                ❌ Alpha
-                                            </span>
-                                        </div>
-                                        <div class="note-container">
-                                            <p class="text-sm text-gray-600 mb-1">Catatan:</p>
-                                            <p class="text-gray-800">-</p>
-                                        </div>
-                                    </div>
-                                `;
-                                
-                                // Show thank you modal
-                                showThankYouModal();
-                                
-                                // Redirect to page 1 after 3 seconds
-                                setTimeout(() => {
-                                    hideThankYouModal();
-                                    setTimeout(() => {
-                                        showPage(1);
-                                    }, 500);
-                                }, 3000);
-                            } else {
-                                showNotification('error', 'Gagal menyimpan absensi. Silakan coba lagi.');
-                            }
-                        });
-                    }
-                    
-                    // Add event listener to save button
-                    // Setelah querySelectorAll('.attendance-option').forEach(...);
+            // 1. Event listener untuk tombol status absensi (hadir/sakit/izin/alpha)
+document.querySelectorAll('.attendance-option').forEach(button => {
+    button.addEventListener('click', function() {
+        const studentName = this.getAttribute('data-student');
+        const status = this.getAttribute('data-status');
+        const card = this.closest('.student-card');
+        const noteContainer = card.querySelector('.note-container');
+        const noteInput = card.querySelector('.note-input');
+
+        // Check if this option is already selected
+        const isSelected = this.classList.contains('selected-option');
+        // Clear any previously selected options in this card
+        card.querySelectorAll('.attendance-option').forEach(opt => {
+            opt.classList.remove('selected-option');
+        });
+        // If the option was already selected, deselect it and hide note container
+        if (isSelected) {
+            noteContainer.style.display = 'none';
+            delete selectedStudentStatus[studentName];
+            return;
+        }
+        // Mark this option as selected
+        this.classList.add('selected-option');
+        selectedStudentStatus[studentName] = status;
+
+        // Show note input with appropriate placeholder
+        noteContainer.style.display = 'block';
+        if (status === 'hadir') {
+            noteInput.placeholder = 'Contoh: Buku 1 Halaman 1, Tahfidz Surah Al-Fatihah';
+        } else if (status === 'sakit') {
+            noteInput.placeholder = 'Contoh: Demam';
+        } else if (status === 'izin') {
+            noteInput.placeholder = 'Contoh: Acara Keluarga';
+        } else {
+            noteContainer.style.display = 'none'; // Hide for alpha
+
+            // Untuk alpha, cari index siswa agar dapat nama kelas lengkap
+            const idx = parseInt(card.querySelector('.save-btn').getAttribute('data-student-index'));
+            const studentData = filteredStudents[idx];
+
+            saveAttendanceXHR(studentName, status, "", studentData.kelas).then(success => {
+                if (success) {
+                    const studentContent = card.querySelector('.student-content');
+                    studentContent.innerHTML = `
+                        <div class="flex flex-col">
+                            <div class="flex items-center justify-center mb-3">
+                                <span class="attendance-badge inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                    ❌ Alpha
+                                </span>
+                            </div>
+                            <div class="note-container">
+                                <p class="text-sm text-gray-600 mb-1">Catatan:</p>
+                                <p class="text-gray-800">-</p>
+                            </div>
+                        </div>
+                    `;
+                    showThankYouModal();
+                    setTimeout(() => {
+                        hideThankYouModal();
+                        setTimeout(() => {
+                            showPage(1);
+                        }, 500);
+                    }, 3000);
+                } else {
+                    showNotification('error', 'Gagal menyimpan absensi. Silakan coba lagi.');
+                }
+            });
+            return; // jangan lanjut ke bawah
+        }
+    });
+});
+
+// 2. Event listener untuk tombol simpan (save-btn) - HARUS DI LUAR blok atas
 document.querySelectorAll('.save-btn').forEach((saveBtn) => {
     saveBtn.onclick = function() {
         const card = this.closest('.student-card');
@@ -1851,7 +1848,6 @@ document.querySelectorAll('.save-btn').forEach((saveBtn) => {
 
         saveAttendanceXHR(studentData['nama siswa'], status, note, studentData.kelas).then(success => {
             if (success) {
-                // Update the UI to show the saved status
                 const studentContent = card.querySelector('.student-content');
                 studentContent.innerHTML = `
                     <div class="flex flex-col">
@@ -1886,9 +1882,7 @@ document.querySelectorAll('.save-btn').forEach((saveBtn) => {
             }
         });
     };
-}
-                });
-            });
+});
             
             // Update current date
             currentDate.textContent = formatCurrentDate();
