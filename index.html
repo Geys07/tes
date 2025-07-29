@@ -1606,16 +1606,16 @@
                     selectedTeacher = teachersData[index].nama;
                     
                     // Get unique classes for this teacher
-                    const teacherClasses = new Set();
+                    const teacherClassNumbers = new Set();
 studentsData.forEach(student => {
     if (student['nama guru'] === selectedTeacher) {
         const classNumber = extractClassNumber(student.kelas);
         if (classNumber) teacherClassNumbers.add(classNumber);
     }
 });
-                    
-                    // Render class options
-                    renderClassOptions(Array.from(teacherClasses));
+
+// Render class options
+renderClassOptions(Array.from(teacherClassNumbers));
                     
                     openClassModal();
                 });
