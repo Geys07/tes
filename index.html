@@ -1609,7 +1609,8 @@
                     const teacherClasses = new Set();
 studentsData.forEach(student => {
     if (student['nama guru'] === selectedTeacher) {
-        teacherClasses.add(student.kelas); // simpan nama kelas lengkap
+        const classNumber = extractClassNumber(student.kelas);
+        if (classNumber) teacherClassNumbers.add(classNumber);
     }
 });
                     
@@ -1636,8 +1637,8 @@ studentsData.forEach(student => {
             classes.sort((a, b) => parseInt(a) - parseInt(b));
             
             classOptions.innerHTML = classes.map(className => `
-                <button class="class-option bg-blue-50 hover:bg-blue-100 text-blue-800 font-medium py-4 px-6 rounded-lg transition duration-300 shadow-sm transform hover:scale-105" data-class="${className}">
-                    Kelas ${className}
+                <button class="class-option bg-blue-50 hover:bg-blue-100 text-blue-800 font-medium py-4 px-6 rounded-lg transition duration-300 shadow-sm transform hover:scale-105" data-class="${classNumber}">
+                    Kelas ${classNumber}
                 </button>
             `).join('');
             
