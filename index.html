@@ -1745,8 +1745,9 @@ renderClassOptions(Array.from(teacherClassNumbers));
                                             <label class="block text-sm font-medium text-gray-700 mb-1">Catatan:</label>
                                             <textarea class="note-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" rows="2" placeholder=""></textarea>
                                         </div>
-                                        <button class="save-btn w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-300 shadow-sm text-sm">
-                                            Simpan
+                                        <button class="save-btn w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-300 shadow-sm text-sm"
+    data-student-index="${i}">
+    Simpan
                                         </button>
                                     </div>
                                 </div>`
@@ -1833,19 +1834,22 @@ renderClassOptions(Array.from(teacherClassNumbers));
                     }
                     
                     // Add event listener to save button
-                    if (status !== 'alpha') {
-    const saveBtn = card.querySelector('.save-btn');
+                    // Setelah querySelectorAll('.attendance-option').forEach(...);
+document.querySelectorAll('.save-btn').forEach((saveBtn) => {
     saveBtn.onclick = function() {
+        const card = this.closest('.student-card');
+        const noteInput = card.querySelector('.note-input');
         const note = noteInput.value.trim();
+        const idx = parseInt(this.getAttribute('data-student-index'));
+        const studentData = filteredStudents[idx];
+        const status = selectedStudentStatus[studentData['nama siswa']];
 
-        // Validate note input (required for all except alpha)
         if (note === '') {
             showNotification('error', 'Catatan wajib diisi!');
             return;
         }
 
-        /// Save attendance with full class name
-                            saveAttendanceXHR(studentName, status, note, student.kelas).then(success => {
+        saveAttendanceXHR(studentData['nama siswa'], status, note, studentData.kelas).then(success => {
             if (success) {
                 // Update the UI to show the saved status
                 const studentContent = card.querySelector('.student-content');
