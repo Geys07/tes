@@ -2009,6 +2009,7 @@ document.querySelectorAll('.save-btn').forEach((saveBtn) => {
         Promise.all([fetchAttendanceData(), fetchStudents()])
             .then(() => {
                 renderAttendanceComparisonChart();
+            });
         
         // Filter attendance data based on selected filters
         function filterAttendanceData() {
