@@ -1893,6 +1893,14 @@ document.querySelectorAll('.save-btn').forEach((saveBtn) => {
         
         // Filter attendance data based on selected filters
         function filterAttendanceData() {
+            // Di awal fungsi filterAttendanceData
+let showTable = false;
+if (filterMonth.value || filterTeacher.value || filterClassNumber.value || filterClassName.value) {
+    showTable = true;
+    document.querySelector('.admin-panel.mb-8').style.display = 'block';
+} else {
+    document.querySelector('.admin-panel.mb-8').style.display = 'none';
+}
             const month = filterMonth.value;
             const teacher = filterTeacher.value;
             const classNumber = filterClassNumber.value;
@@ -1909,47 +1917,36 @@ document.querySelectorAll('.save-btn').forEach((saveBtn) => {
             }
             
             // Filter attendance data based on selected filters
+function getTodayDate() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// PATCH: Filter data absensi hanya hari ini
 filteredAttendanceData = attendanceData.filter(record => {
-    let match = true;
-
-    // Filter by month
-    if (month && !record.date.startsWith(`${new Date().getFullYear()}-${month}`)) {
-        match = false;
-    }
-
-    // Filter by teacher
-    if (teacher && record.teacher !== teacher) {
-        match = false;
-    }
-
-    // PATCH: Prioritaskan exact match nama kelas
-    if (className && className !== '') {
-        if (record.class.toLowerCase() !== className.toLowerCase()) match = false;
-    } else if (classNumber && classNumber !== '') {
-        const recordClassNumber = extractClassNumber(record.class);
-        if (recordClassNumber !== classNumber) match = false;
-    }
-
-    return match;
+    return record.date === getTodayDate();
 });
 
-    console.log('filteredAttendanceData:', filteredAttendanceData);        
-            
-            // Sort by date (newest first)
-            filteredAttendanceData.sort((a, b) => {
-                if (a.date > b.date) return -1;
-                if (a.date < b.date) return 1;
-                return 0;
-            });
-            
-            // Reset to first page
-            currentPage = 1;
-            
-            // Update record count
-            recordCount.textContent = filteredAttendanceData.length;
-            
-            // Render admin data
-            renderAdminData();
+console.log('filteredAttendanceData:', filteredAttendanceData);
+
+// Sort by date (newest first)
+filteredAttendanceData.sort((a, b) => {
+    if (a.date > b.date) return -1;
+    if (a.date < b.date) return 1;
+    return 0;
+});
+
+// Reset to first page
+currentPage = 1;
+
+// Update record count
+recordCount.textContent = filteredAttendanceData.length;
+
+// Render admin data
+renderAdminData();
         }
         
         // Generate Monthly Attendance Report
@@ -2079,9 +2076,9 @@ else if (classNumber && classNumber !== '') {
                         }
                     } else {
                         // If no record found and date is in the past, count as alpha
-                        if (dateToCheck <= today && dateToCheck.getDay() !== 0 && dateToCheck.getDay() !== 6) { // Skip weekends (0 = Sunday, 6 = Saturday)
-                            alphaCount++;
-                        }
+                        if (dateToCheck <= today) {
+    alphaCount++;
+}
                     }
                     
                     tableHTML += `<td class="${statusClass}">${statusCode}</td>`;
@@ -2299,9 +2296,9 @@ else if (classNumber && classNumber !== '') {
                         }
                     } else {
                         // If no record found and date is in the past, count as alpha
-                        if (dateToCheck <= today && dateToCheck.getDay() !== 0 && dateToCheck.getDay() !== 6) {
-                            alphaCount++;
-                        }
+                        if (dateToCheck <= today) {
+    alphaCount++;
+}
                     }
                     
                     row.push(statusCode);
