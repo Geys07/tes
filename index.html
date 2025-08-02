@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         
@@ -655,6 +657,16 @@
         .pdf-button svg {
             margin-right: 8px;
         }
+
+        #comparisonChartPanel {
+            padding-bottom: 32px;
+        }
+        @media (max-width: 640px) {
+            #comparisonChartPanel canvas {
+                min-width: 320px;
+                max-width: 100vw;
+            }
+        }
     </style>
 </head>
 <body>
@@ -908,6 +920,15 @@
                         </button>
                     </div>
                 </div>
+
+            <div class="admin-panel mb-8" id="comparisonChartPanel">
+            <h3 class="text-xl font-semibold text-blue-800 mb-4 text-center">
+                Perbandingan Kehadiran Siswa (%)</h3>
+            <div class="w-full overflow-x-auto">
+                <div style="min-width:340px;max-width:700px;margin:auto;">
+                    <canvas id="attendanceComparisonChart" style="width:100%;height:auto;max-width:100%;" height="320"></canvas>
+                </div>
+            </div>
             </div>
         </div>
     </main>
@@ -984,7 +1005,6 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Google Apps Script Web App URL - Replace with your actual deployed script URL
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw2itMBTKF49ugT-xbEUY1PI_Tpgg89W3Wmy8gB4bCv0XWNms0mXo-zHQYmoqZx6IeuHA/exec';
@@ -1890,6 +1910,105 @@ document.querySelectorAll('.save-btn').forEach((saveBtn) => {
             // Update page 2 title with the format "Kelas [selectedClass] - [selectedTeacher]"
             classTitle.textContent = `Kelas ${selectedClass} - ${selectedTeacher}`;
         }
+
+        // Fungsi render chart responsif
+        function renderAttendanceComparisonChart() {
+            // Pastikan studentsData dan attendanceData sudah terisi
+            const classNumbers = ['1', '2', '3', '4', '5', '6'];
+            const kelasLabels = classNumbers.map(n => `Kelas ${n}`);
+            const colors = [
+                '#22c55e', '#3b82f6', '#f59e42', '#a78bfa', '#f87171', '#2563eb'
+            ];
+            const chartData = [];
+
+            function extractClassNumber(className) {
+                const match = className.match(/\d+/);
+                return match ? match[0] : null;
+            }
+            function persentaseHadirSiswa(studentName, classNumber) {
+                const records = attendanceData.filter(r =>
+                    r.student === studentName && extractClassNumber(r.class) === classNumber
+                );
+                if (records.length === 0) return null;
+                const hadir = records.filter(r => r.status === 'hadir').length;
+                return Math.round((hadir / records.length) * 100);
+            }
+
+            classNumbers.forEach(num => {
+                const siswaDiKelas = studentsData.filter(siswa => extractClassNumber(siswa.kelas) === num);
+                const persenList = siswaDiKelas.map(siswa => persentaseHadirSiswa(siswa['nama siswa'], num)).filter(v => v !== null);
+                const rata2 = persenList.length > 0 ? Math.round(persenList.reduce((a,b)=>a+b,0)/persenList.length) : 0;
+                chartData.push(rata2);
+            });
+
+            const ctx = document.getElementById('attendanceComparisonChart').getContext('2d');
+            if (window.attendanceComparisonChartInstance) {
+                window.attendanceComparisonChartInstance.destroy();
+            }
+            window.attendanceComparisonChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: kelasLabels,
+                    datasets: [{
+                        label: 'Rata-rata Kehadiran (%)',
+                        data: chartData,
+                        backgroundColor: colors,
+                        borderRadius: 12,
+                        barPercentage: 0.75,
+                        categoryPercentage: 0.7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    aspectRatio: 2, // Lebar : Tinggi
+                    plugins: {
+                        legend: { display: false },
+                        title: {
+                            display: true,
+                            text: 'Perbandingan Kehadiran Siswa (%)',
+                            font: { size: 18, weight: 'bold' }
+                        },
+                        datalabels: {
+                            display: true,
+                            color: '#222',
+                            font: { weight: 'bold', size: 15 },
+                            anchor: 'end',
+                            align: 'start',
+                            formatter: value => value
+                        }
+                    },
+                    animation: { duration: 1200, easing: 'easeOutQuart' },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Persentase Kehadiran (%)',
+                                font: { size: 14 }
+                            },
+                            ticks: { stepSize: 10, font: { size: 13 } }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Kelas',
+                                font: { size: 14 }
+                            },
+                            ticks: { font: { size: 13 } }
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+        }
+
+        // Panggil fungsi ini setelah data studentsData & attendanceData sudah siap
+        // Contoh: setelah fetchAttendanceData() & fetchStudents() di halaman admin
+        Promise.all([fetchAttendanceData(), fetchStudents()])
+            .then(() => {
+                renderAttendanceComparisonChart();
         
         // Filter attendance data based on selected filters
         function filterAttendanceData() {
