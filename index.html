@@ -2452,8 +2452,6 @@ function printAttendanceReport() {
         </div>
         <div style="text-align:right;">
             Karawang, ${tanggalCetak}<br>
-            Guru Kelas<br><br><br>
-            ${reportTeacherText}<br>
             <hr style="width:60%; margin-left:auto;">
         </div>
       </div>
@@ -2644,18 +2642,17 @@ function exportAttendanceToPDF() {
     const doc = data.doc; // jsPDF doc instance
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-
-    // Posisi Y di bawah tabel
-    let tableBottomY = data.cursor.y;
-    let keteranganY = tableBottomY + 8;
     let footerHeight = 30; // tinggi footer
-    let minFooterY = pageHeight - footerHeight;
+    let yFooter = pageHeight - footerHeight;
 
-    }
+    //Just Footer
+    doc.setFontSize(11);
+    doc.text('Mengetahui,', 30, yFooter);
+    doc.text('Kepala Sekolah', 30, yFooter + 7);
+    doc.text('(.............................)', 30, yFooter + 25);
 
-    // Keterangan
-    doc.setFontSize(10);
-    doc.text('Keterangan: H = Hadir, S = Sakit, I = Izin, - = Alpha', 20, keteranganY);
+    doc.text(`Karawang, ${tanggalCetak}`, pageWidth - 67, yFooter);
+    doc.line(pageWidth - 77, yFooter + 28, pageWidth - 17, yFooter + 28);
 },
     });
     
