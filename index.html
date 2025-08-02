@@ -2694,35 +2694,37 @@ function exportAttendanceToPDF() {
         },
         pageBreak: 'auto',
         didDrawPage: function (data) {
-            // Y posisi paling bawah dari tabel pada halaman ini
-            let tableBottomY = data.cursor.y;
+    const doc = data.doc; // jsPDF doc instance
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
-            // Hindari tumpang tindih: keterangan minimal di bawah tabel, atau di atas footer jika tabel kepanjangan
-            let yKet = tableBottomY + 8;
-            let footerHeight = 30; // kira-kira total tinggi footer
-            let minFooterY = pageHeight - footerHeight;
+    // Posisi Y di bawah tabel
+    let tableBottomY = data.cursor.y;
+    let keteranganY = tableBottomY + 8;
+    let footerHeight = 30; // tinggi footer
+    let minFooterY = pageHeight - footerHeight;
 
-            // Jika keterangan menabrak footer, geser ke atas
-            if (yKet > minFooterY - 10) {
-                yKet = minFooterY - 10;
-            }
+    // Jika keterangan terlalu dekat/tumpang tindih footer, geser ke atas
+    if (keteranganY > minFooterY - 10) {
+        keteranganY = minFooterY - 10;
+    }
 
-            // Keterangan
-            doc.setFontSize(10);
-            doc.text('Keterangan: H = Hadir, S = Sakit, I = Izin, - = Alpha', 20, yKet);
+    // Keterangan
+    doc.setFontSize(10);
+    doc.text('Keterangan: H = Hadir, S = Sakit, I = Izin, - = Alpha', 20, keteranganY);
 
-            // Footer
-            let yFooter = pageHeight - footerHeight;
-            doc.setFontSize(11);
-            doc.text('Mengetahui,', 30, yFooter);
-            doc.text('Kepala Sekolah', 30, yFooter + 7);
-            doc.text('(.............................)', 30, yFooter + 25);
+    // Footer di bagian bawah halaman
+    let yFooter = pageHeight - footerHeight;
+    doc.setFontSize(11);
+    doc.text('Mengetahui,', 30, yFooter);
+    doc.text('Kepala Sekolah', 30, yFooter + 7);
+    doc.text('(.............................)', 30, yFooter + 25);
 
-            doc.text(`Karawang, ${tanggalCetak}`, pageWidth - 67, yFooter);
-            doc.text('Guru Kelas', pageWidth - 67, yFooter + 7);
-            doc.text(reportTeacherText, pageWidth - 67, yFooter + 25);
-            doc.line(pageWidth - 77, yFooter + 28, pageWidth - 17, yFooter + 28);
-        },
+    doc.text(`Karawang, ${tanggalCetak}`, pageWidth - 67, yFooter);
+    doc.text('Guru Kelas', pageWidth - 67, yFooter + 7);
+    doc.text(reportTeacherText, pageWidth - 67, yFooter + 25);
+    doc.line(pageWidth - 77, yFooter + 28, pageWidth - 17, yFooter + 28);
+},
     });
     
     // Save PDF
