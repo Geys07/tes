@@ -2704,24 +2704,30 @@ function exportAttendanceToPDF() {
             [daysInMonth + 4]: { cellWidth: 10 },
         },
         pageBreak: 'auto',
-        // === Footer di setiap halaman ===
         didDrawPage: function (data) {
+            let tableBottomY = data.cursor.y; // posisi bawah tabel
+
+            // Jika tabel terlalu tinggi dan footer bisa tumpang tindih, pindahkan footer ke bawah tabel
+            let yKet = tableBottomY + 8;
+            if (yKet > doc.internal.pageSize.getHeight() - 50) {
+                yKet = doc.internal.pageSize.getHeight() - 50;
+            }
+
             // Keterangan
-            let yKet = doc.internal.pageSize.getHeight() - 40;
             doc.setFontSize(10);
             doc.text('Keterangan: H = Hadir, S = Sakit, I = Izin, - = Alpha', 20, yKet);
 
             // Footer
-            let yFooter = yKet + 10;
+            let yFooter = doc.internal.pageSize.getHeight() - 30;
             doc.setFontSize(11);
             doc.text('Mengetahui,', 30, yFooter);
             doc.text('Kepala Sekolah', 30, yFooter + 7);
             doc.text('(.............................)', 30, yFooter + 25);
 
-            doc.text(`Karawang, ${tanggalCetak}`, pageWidth-67, yFooter);
-            doc.text('Guru Kelas', pageWidth-67, yFooter + 7);
-            doc.text(reportTeacherText, pageWidth-67, yFooter + 25);
-            doc.line(pageWidth-77, yFooter + 28, pageWidth-17, yFooter + 28);
+            doc.text(`Karawang, ${tanggalCetak}`, pageWidth - 67, yFooter);
+            doc.text('Guru Kelas', pageWidth - 67, yFooter + 7);
+            doc.text(reportTeacherText, pageWidth - 67, yFooter + 25);
+            doc.line(pageWidth - 77, yFooter + 28, pageWidth - 17, yFooter + 28);
         },
     });
 
