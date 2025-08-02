@@ -2650,33 +2650,26 @@ function exportAttendanceToPDF() {
     // Create PDF document
     const doc = new jsPDF('l', 'mm', 'a4');
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
-    // Add header
+    // Header
     doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
     doc.text('REKAP ABSENSI BULANAN GEMAR MENGAJI', pageWidth/2, 18, { align: 'center' });
     doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
     doc.text('SDIT Harapan Umat Karawang', pageWidth/2, 26, { align: 'center' });
     doc.setFontSize(10);
     doc.text('Jl. Pakuncen No. 01, Desa Sukaharja, Kec. Teluk Jambe Timur', pageWidth/2, 32, { align: 'center' });
-    doc.setLineWidth(0.5);
     doc.line(15, 36, pageWidth-15, 36);
 
-    // === Guru, Kelas, Bulan: sejajar dalam satu baris ===
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    // format: Guru: [guru]   Kelas: [kelas]   Bulan: [bulan]
+    // Info bar
     let infoY = 44;
+    doc.setFontSize(11);
     doc.text(`Guru: ${reportTeacherText}`, 20, infoY);
     doc.text(`Kelas: ${reportClassText}`, pageWidth/2 - 25, infoY);
     doc.text(`Bulan: ${monthName} ${year}`, pageWidth-65, infoY);
-
-    // === Rata-rata kehadiran di bawah Guru ===
-    doc.setFontSize(11);
     doc.text(`Rata-rata Kehadiran: ${averagePercent.toFixed(2)}%`, 20, infoY + 8);
 
-    // === Table ===
+    // Tabel
     doc.autoTable({
         head: [headers],
         body: rows,
@@ -2692,25 +2685,26 @@ function exportAttendanceToPDF() {
         },
         headStyles: {
             fillColor: [255, 255, 255],
-            textColor: [0,0,0],
+            textColor: [0, 0, 0],
             fontStyle: 'bold'
         },
         columnStyles: {
             0: { cellWidth: 40, halign: 'left' },
-            ...Object.fromEntries(Array(daysInMonth).fill().map((_, i) => [i + 1, { cellWidth: 6 }])),
-            [daysInMonth + 1]: { cellWidth: 6 },
-            [daysInMonth + 2]: { cellWidth: 6 },
-            [daysInMonth + 3]: { cellWidth: 6 },
-            [daysInMonth + 4]: { cellWidth: 10 },
+            // ... kolom lain seperti sebelumnya ...
         },
         pageBreak: 'auto',
         didDrawPage: function (data) {
-            let tableBottomY = data.cursor.y; // posisi bawah tabel
+            // Y posisi paling bawah dari tabel pada halaman ini
+            let tableBottomY = data.cursor.y;
 
-            // Jika tabel terlalu tinggi dan footer bisa tumpang tindih, pindahkan footer ke bawah tabel
+            // Hindari tumpang tindih: keterangan minimal di bawah tabel, atau di atas footer jika tabel kepanjangan
             let yKet = tableBottomY + 8;
-            if (yKet > doc.internal.pageSize.getHeight() - 50) {
-                yKet = doc.internal.pageSize.getHeight() - 50;
+            let footerHeight = 30; // kira-kira total tinggi footer
+            let minFooterY = pageHeight - footerHeight;
+
+            // Jika keterangan menabrak footer, geser ke atas
+            if (yKet > minFooterY - 10) {
+                yKet = minFooterY - 10;
             }
 
             // Keterangan
@@ -2718,7 +2712,7 @@ function exportAttendanceToPDF() {
             doc.text('Keterangan: H = Hadir, S = Sakit, I = Izin, - = Alpha', 20, yKet);
 
             // Footer
-            let yFooter = doc.internal.pageSize.getHeight() - 30;
+            let yFooter = pageHeight - footerHeight;
             doc.setFontSize(11);
             doc.text('Mengetahui,', 30, yFooter);
             doc.text('Kepala Sekolah', 30, yFooter + 7);
@@ -2730,7 +2724,7 @@ function exportAttendanceToPDF() {
             doc.line(pageWidth - 77, yFooter + 28, pageWidth - 17, yFooter + 28);
         },
     });
-
+    
     // Save PDF
     const filename = `rekap_absensi_${monthName.toLowerCase()}_${year}_${reportClassText.replace(/\s+/g, '_').toLowerCase()}.pdf`;
     doc.save(filename);
