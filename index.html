@@ -1897,12 +1897,11 @@ document.querySelectorAll('.save-btn').forEach((saveBtn) => {
             const teacher = filterTeacher.value;
             const classNumber = filterClassNumber.value;
             const className = filterClassName.value;
-            const guruDipilih = filterTeacher.value;
             const kelasDipilih = filterClassNumber.value || filterClassName.value;
             const adminPanelDataAbsensi = document.querySelectorAll('.admin-panel.mb-8')[1]; // Panel kedua
 
             // --- Logika tampil/sembunyikan panel Data Absensi ---
-    if (!guruDipilih || !kelasDipilih) {
+    if (!kelasDipilih) {
         adminPanelDataAbsensi.style.display = 'none';
 
         // Opsional: tampilkan pesan jika panel disembunyikan
@@ -1911,7 +1910,7 @@ document.querySelectorAll('.save-btn').forEach((saveBtn) => {
             notice = document.createElement('div');
             notice.id = 'absensiNotice';
             notice.className = 'text-center text-gray-500 my-4';
-            notice.innerText = 'Silakan pilih Guru dan Kelas untuk melihat data absensi.';
+            notice.innerText = 'Silakan pilih Kelas untuk melihat data absensi.';
             adminPanelDataAbsensi.parentNode.insertBefore(notice, adminPanelDataAbsensi);
         }
         notice.style.display = '';
