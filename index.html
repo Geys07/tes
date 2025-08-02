@@ -2204,228 +2204,379 @@ if (dateToCheck <= today) {
         }
         
         // Export attendance report to PDF
-        function exportAttendanceToPDF() {
-            const { jsPDF } = window.jspdf;
-            
-            // Get report data
-            const month = filterMonth.value;
-            const teacher = filterTeacher.value;
-            const classNumber = filterClassNumber.value;
-            const className = filterClassName.value;
-            
-            if (!month || (!classNumber && !className)) {
-                showNotification('error', 'Pilih bulan dan kelas terlebih dahulu untuk mengunduh laporan.');
-                return;
-            }
-            
-            const monthName = getMonthName(month);
-            const year = new Date().getFullYear();
-            const now = new Date();
-            const tanggalCetak = `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
-            const reportTitle = `Rekap Absensi - ${monthName} ${year}`;
-            const reportTeacherText = teacher || 'Semua Guru';
-            const reportClassText = className || (classNumber ? `Kelas ${classNumber}` : 'Semua Kelas');
-            
-            // Create PDF document
-            const doc = new jsPDF('l', 'mm', 'a4');
-            
-            // Add header
-            doc.setFontSize(16);
-            doc.setFont('helvetica', 'bold');
-            doc.text('REKAP ABSENSI BULANAN GEMAR MENGAJI', 148, 18, { align: 'center' });
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'normal');
-            doc.text('SDIT Harapan Umat Karawang', 148, 26, { align: 'center' });
-            doc.setFontSize(10);
-            doc.text('Jl. Pakuncen No. 01, Desa Sukaharja, Kec. Teluk Jambe Timur', 148, 32, { align: 'center' });
-            doc.setLineWidth(0.5);
-            doc.line(15, 36, 281, 36);
-            
-            doc.setFontSize(11);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`Guru: ${reportTeacherText}`, 20, 44);
-            doc.text(`Kelas: ${reportClassText}`, 20, 50);
-            doc.text(`Bulan: ${monthName} ${year}`, 20, 56);
-            doc.text(`Tanggal Cetak: ${tanggalCetak}`, 20, 62);
-            
-            // Get filtered students
-            let filteredStudents = studentsData;
-            
-            if (teacher) {
-                filteredStudents = filteredStudents.filter(student => student['nama guru'] === teacher);
-            }
-            
-            // Apply class filtering - prioritize className over classNumber
-            if (className) {
-                // Use exact match for class name
-                filteredStudents = filteredStudents.filter(student => student.kelas.toLowerCase() === className.toLowerCase());
-            } else if (classNumber) {
-                filteredStudents = filteredStudents.filter(student => {
-                    const studentClassNumber = extractClassNumber(student.kelas);
-                    return studentClassNumber === classNumber;
-                });
-            }
-            
-            // Sort students alphabetically
-            filteredStudents.sort((a, b) => a['nama siswa'].localeCompare(b['nama siswa']));
-            
-            // Prepare table data
-            const daysInMonth = getDaysInMonth(year, parseInt(month));
-            
-            // Create table headers
-            const headers = ['Nama Siswa'];
-            for (let day = 1; day <= daysInMonth; day++) {
-                headers.push(day.toString());
-            }
-            headers.push('H', 'S', 'I', 'A', '%');
-            
-            // Create table rows
-            const rows = [];
-            
-            filteredStudents.forEach(student => {
-                const studentName = student['nama siswa'];
-                const row = [studentName];
-                
-                // Initialize counters for summary
-                let hadirCount = 0;
-                let sakitCount = 0;
-                let izinCount = 0;
-                let alphaCount = 0;
-                
-                // Add status for each day
-                for (let day = 1; day <= daysInMonth; day++) {
-                    const dateStr = `${year}-${month}-${String(day).padStart(2, '0')}`;
-                    const today = new Date();
-                    const currentDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-                    const dateToCheck = new Date(dateStr);
-                    
-                    // Skip future dates
-                    if (dateStr > currentDate) {
-                        row.push('');
-                        continue;
-                    }
-                    
-                    // Find attendance record for this student on this date
-                    let record = null;
-                    
-                    // First try to find an exact match with class name if specified
-                    if (className && className !== '') {
-    record = attendanceData.find(r => 
-        r.date === dateStr && 
-        r.student === studentName &&
-        (teacher ? r.teacher === teacher : true) &&
-        r.class.toLowerCase() === className.toLowerCase()
-    );
-} else if (classNumber && classNumber !== '') {
-    record = attendanceData.find(r => 
-        r.date === dateStr && 
-        r.student === studentName &&
-        (teacher ? r.teacher === teacher : true) &&
-        extractClassNumber(r.class) === classNumber
-    );
-} else {
-    record = attendanceData.find(r => 
-        r.date === dateStr && 
-        r.student === studentName &&
-        (teacher ? r.teacher === teacher : true)
-    );
-}
-                    
-                    let statusCode = '-';
-                    
-                    if (record) {
-                        if (record.status === 'hadir') {
-                            statusCode = 'H';
-                            hadirCount++;
-                        } else if (record.status === 'sakit') {
-                            statusCode = 'S';
-                            sakitCount++;
-                        } else if (record.status === 'izin') {
-                            statusCode = 'I';
-                            izinCount++;
-                        } else if (record.status === 'alpha') {
-                            statusCode = '-';
-                            alphaCount++;
-                        }
-                    } else {
-                        // If no record found and date is in the past, count as alpha
-                        // Kode baru: alpha dihitung di semua hari (termasuk Sabtu dan Minggu)
-if (dateToCheck <= today) {
-    alphaCount++;
-}
-                    }
-                    
-                    row.push(statusCode);
-                }
-                
-                // Calculate attendance percentage
-                const totalDays = hadirCount + sakitCount + izinCount + alphaCount;
-                const attendancePercentage = totalDays > 0 ? Math.round((hadirCount / totalDays) * 100) : 0;
-                
-                // Add summary columns
-                row.push(hadirCount.toString());
-                row.push(sakitCount.toString());
-                row.push(izinCount.toString());
-                row.push(alphaCount.toString());
-                row.push(`${attendancePercentage}%`);
-                
-                rows.push(row);
-            });
-            
-            // Generate table
-            doc.autoTable({
-                head: [headers],
-                body: rows,
-                startY: 70,
-                theme: 'grid',
-                styles: {
-                    fontSize: 7,
-                    cellPadding: 1,
-                    halign: 'center',
-                    valign: 'middle'
-                },
-                headStyles: {
-                    fillColor: [255, 255, 255],
-                    textColor: [0,0,0],
-                    fontStyle: 'bold'
-                },
-                columnStyles: {
-    0: { cellWidth: 40, halign: 'left' }, // Nama Siswa
-    // Kolom tanggal (1-31) lebih kecil
-    ...Object.fromEntries(Array(daysInMonth).fill().map((_, i) => [i + 1, { cellWidth: 6 }])),
-    // Kolom ringkasan lebih kecil
-    [daysInMonth + 1]: { cellWidth: 6 }, // H
-    [daysInMonth + 2]: { cellWidth: 6 }, // S
-    [daysInMonth + 3]: { cellWidth: 6 }, // I
-    [daysInMonth + 4]: { cellWidth: 6 }, // A
-    [daysInMonth + 5]: { cellWidth: 10 }, // %
-  },
-  tableWidth: 'auto', // biar muat semua kolom
-});
-            
-            // Add legend
-            let yKet = doc.lastAutoTable.finalY + 6;
-            doc.setFontSize(10);
-            doc.text('Keterangan: H = Hadir, S = Sakit, I = Izin, - = Alpha', 20, yKet);
-            
-            // Add footer
-            let yFooter = yKet + 20;
-            doc.setFontSize(11);
-            doc.text('Mengetahui,', 30, yFooter);
-            doc.text('Kepala Sekolah', 30, yFooter + 7);
-            doc.text('(.............................)', 30, yFooter + 25);
+function generateMonthlyReport(month, teacher, classNumber, className) {
+    const year = new Date().getFullYear();
+    const daysInMonth = getDaysInMonth(year, parseInt(month));
+    const monthName = getMonthName(month);
 
-            doc.text(`Karawang, ${tanggalCetak}`, 230, yFooter);
-            doc.text('Guru Kelas', 230, yFooter + 7);
-            doc.text(reportTeacherText, 230, yFooter + 25);
-            doc.line(220, yFooter + 28, 280, yFooter + 28);
-            
-            // Save PDF
-            const filename = `rekap_absensi_${monthName.toLowerCase()}_${year}_${reportClassText.replace(/\s+/g, '_').toLowerCase()}.pdf`;
-            doc.save(filename);
-            
-            showNotification('success', 'Laporan berhasil diunduh dalam format PDF!');
+    // Update report info
+    reportMonth.textContent = `${monthName} ${year}`;
+    reportTeacher.textContent = teacher || 'Semua Guru';
+    reportClass.textContent = className || (classNumber ? `Kelas ${classNumber}` : 'Semua Kelas');
+
+    // Get students based on filters
+    let filteredStudents = studentsData;
+
+    // Filter by teacher if specified
+    if (teacher) {
+        filteredStudents = filteredStudents.filter(student => student['nama guru'] === teacher);
+    }
+
+    // Filter by className jika dipilih
+    if (className && className !== '') {
+        filteredStudents = filteredStudents.filter(student => student.kelas === className);
+    }
+    // Jika tidak, filter by classNumber
+    else if (classNumber && classNumber !== '') {
+        filteredStudents = filteredStudents.filter(student => {
+            const studentClassNumber = extractClassNumber(student.kelas);
+            return studentClassNumber === classNumber;
+        });
+    }
+
+    // Sort students alphabetically
+    filteredStudents.sort((a, b) => a['nama siswa'].localeCompare(b['nama siswa']));
+
+    // Generate table header
+    let tableHTML = '<thead><tr>';
+    tableHTML += '<th class="student-name">Nama Siswa</th>';
+
+    // Add date columns
+    for (let day = 1; day <= daysInMonth; day++) {
+        tableHTML += `<th class="date-header">${day}</th>`;
+    }
+
+    // Add summary columns
+    tableHTML += '<th class="summary-header">H</th>';
+    tableHTML += '<th class="summary-header">S</th>';
+    tableHTML += '<th class="summary-header">I</th>';
+    tableHTML += '<th class="summary-header">A</th>';
+    tableHTML += '<th class="summary-header">%</th>';
+    tableHTML += '</tr></thead><tbody>';
+
+    // --- TAMBAHAN: Variabel untuk hitung rata-rata kehadiran ---
+    let totalPercent = 0;
+
+    // Generate table rows for each student
+    filteredStudents.forEach(student => {
+        const studentName = student['nama siswa'];
+        const studentClass = student.kelas;
+
+        tableHTML += `<tr><td class="student-name">${studentName}</td>`;
+
+        // Initialize counters for summary
+        let hadirCount = 0;
+        let sakitCount = 0;
+        let izinCount = 0;
+        let alphaCount = 0;
+
+        // Add status for each day
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${month}-${String(day).padStart(2, '0')}`;
+            const today = new Date();
+            const currentDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            const dateToCheck = new Date(dateStr);
+
+            // Skip future dates
+            if (dateStr > currentDate) {
+                tableHTML += `<td></td>`;
+                continue;
+            }
+
+            // Find attendance record for this student on this date
+            let record = null;
+
+            // First try to find an exact match with class name if specified
+            if (className && className !== '') {
+                record = attendanceData.find(r => 
+                    r.date === dateStr && 
+                    r.student === studentName &&
+                    (teacher ? r.teacher === teacher : true) &&
+                    r.class.toLowerCase() === className.toLowerCase()
+                );
+            } else if (classNumber && classNumber !== '') {
+                record = attendanceData.find(r => 
+                    r.date === dateStr && 
+                    r.student === studentName &&
+                    (teacher ? r.teacher === teacher : true) &&
+                    extractClassNumber(r.class) === classNumber
+                );
+            } else {
+                record = attendanceData.find(r => 
+                    r.date === dateStr && 
+                    r.student === studentName &&
+                    (teacher ? r.teacher === teacher : true)
+                );
+            }
+
+            let statusCode = '-';
+            let statusClass = 'status--';
+
+            if (record) {
+                if (record.status === 'hadir') {
+                    statusCode = 'H';
+                    statusClass = 'status-H';
+                    hadirCount++;
+                } else if (record.status === 'sakit') {
+                    statusCode = 'S';
+                    statusClass = 'status-S';
+                    sakitCount++;
+                } else if (record.status === 'izin') {
+                    statusCode = 'I';
+                    statusClass = 'status-I';
+                    izinCount++;
+                } else if (record.status === 'alpha') {
+                    statusCode = '-';
+                    statusClass = 'status--';
+                    alphaCount++;
+                }
+            } else {
+                // Alpha jika tanggal sudah lewat
+                if (dateToCheck <= today) {
+                    alphaCount++;
+                }
+            }
+
+            tableHTML += `<td class="${statusClass}">${statusCode}</td>`;
         }
+
+        // Calculate attendance percentage
+        const totalDays = hadirCount + sakitCount + izinCount + alphaCount;
+        const attendancePercentage = totalDays > 0 ? Math.round((hadirCount / totalDays) * 100) : 0;
+
+        // --- TAMBAHAN: Akumulasi untuk rata-rata kelas ---
+        totalPercent += attendancePercentage;
+
+        // Add summary columns
+        tableHTML += `<td class="summary-cell">${hadirCount}</td>`;
+        tableHTML += `<td class="summary-cell">${sakitCount}</td>`;
+        tableHTML += `<td class="summary-cell">${izinCount}</td>`;
+        tableHTML += `<td class="summary-cell">${alphaCount}</td>`;
+        tableHTML += `<td class="percentage-cell">${attendancePercentage}%</td>`;
+
+        tableHTML += '</tr>';
+    });
+
+    tableHTML += '</tbody>';
+
+    // --- TAMBAHAN: Hitung rata-rata kehadiran seluruh siswa berdasarkan filter ---
+    const averagePercent = filteredStudents.length > 0 ? (totalPercent / filteredStudents.length) : 0;
+
+    // --- TAMBAHAN: Tampilkan rata-rata kehadiran di bawah 'Bulan' ---
+    // Pastikan di HTML ada elemen: <span id="reportAverage"></span>
+    const reportAverageElem = document.getElementById('reportAverage');
+    if (reportAverageElem) {
+        reportAverageElem.textContent = `${averagePercent.toFixed(2)}%`;
+    }
+
+    // Update the table
+    monthlyReportTable.innerHTML = tableHTML;
+}
+
+// ---------------------------
+// Tambahkan di fungsi export PDF
+// ---------------------------
+function exportAttendanceToPDF() {
+    const { jsPDF } = window.jspdf;
+
+    // Get report data
+    const month = filterMonth.value;
+    const teacher = filterTeacher.value;
+    const classNumber = filterClassNumber.value;
+    const className = filterClassName.value;
+
+    const monthName = getMonthName(month);
+    const year = new Date().getFullYear();
+    const now = new Date();
+    const tanggalCetak = `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
+    const reportTeacherText = teacher || 'Semua Guru';
+    const reportClassText = className || (classNumber ? `Kelas ${classNumber}` : 'Semua Kelas');
+
+    // Filter students
+    let filteredStudents = studentsData;
+    if (teacher) filteredStudents = filteredStudents.filter(student => student['nama guru'] === teacher);
+    if (className) {
+        filteredStudents = filteredStudents.filter(student => student.kelas.toLowerCase() === className.toLowerCase());
+    } else if (classNumber) {
+        filteredStudents = filteredStudents.filter(student => {
+            const studentClassNumber = extractClassNumber(student.kelas);
+            return studentClassNumber === classNumber;
+        });
+    }
+    filteredStudents.sort((a, b) => a['nama siswa'].localeCompare(b['nama siswa']));
+    const daysInMonth = getDaysInMonth(year, parseInt(month));
+
+    // Table prep
+    const headers = ['Nama Siswa'];
+    for (let day = 1; day <= daysInMonth; day++) {
+        headers.push(day.toString());
+    }
+    headers.push('H', 'S', 'I', 'A', '%');
+
+    const rows = [];
+    let totalPercent = 0;
+
+    filteredStudents.forEach(student => {
+        const studentName = student['nama siswa'];
+        const row = [studentName];
+
+        let hadirCount = 0;
+        let sakitCount = 0;
+        let izinCount = 0;
+        let alphaCount = 0;
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${month}-${String(day).padStart(2, '0')}`;
+            const today = new Date();
+            const currentDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            const dateToCheck = new Date(dateStr);
+
+            if (dateStr > currentDate) {
+                row.push('');
+                continue;
+            }
+
+            let record = null;
+            if (className && className !== '') {
+                record = attendanceData.find(r =>
+                    r.date === dateStr &&
+                    r.student === studentName &&
+                    (teacher ? r.teacher === teacher : true) &&
+                    r.class.toLowerCase() === className.toLowerCase()
+                );
+            } else if (classNumber && classNumber !== '') {
+                record = attendanceData.find(r =>
+                    r.date === dateStr &&
+                    r.student === studentName &&
+                    (teacher ? r.teacher === teacher : true) &&
+                    extractClassNumber(r.class) === classNumber
+                );
+            } else {
+                record = attendanceData.find(r =>
+                    r.date === dateStr &&
+                    r.student === studentName &&
+                    (teacher ? r.teacher === teacher : true)
+                );
+            }
+
+            let statusCode = '-';
+            if (record) {
+                if (record.status === 'hadir') {
+                    statusCode = 'H';
+                    hadirCount++;
+                } else if (record.status === 'sakit') {
+                    statusCode = 'S';
+                    sakitCount++;
+                } else if (record.status === 'izin') {
+                    statusCode = 'I';
+                    izinCount++;
+                } else if (record.status === 'alpha') {
+                    statusCode = '-';
+                    alphaCount++;
+                }
+            } else {
+                if (dateToCheck <= today) {
+                    alphaCount++;
+                }
+            }
+            row.push(statusCode);
+        }
+
+        const totalDays = hadirCount + sakitCount + izinCount + alphaCount;
+        const attendancePercentage = totalDays > 0 ? Math.round((hadirCount / totalDays) * 100) : 0;
+        totalPercent += attendancePercentage;
+
+        row.push(hadirCount.toString());
+        row.push(sakitCount.toString());
+        row.push(izinCount.toString());
+        row.push(alphaCount.toString());
+        row.push(`${attendancePercentage}%`);
+
+        rows.push(row);
+    });
+
+    // Hitung rata-rata kehadiran untuk PDF
+    const averagePercent = filteredStudents.length > 0 ? (totalPercent / filteredStudents.length) : 0;
+
+    // Create PDF document
+    const doc = new jsPDF('l', 'mm', 'a4');
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    // Add header
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('REKAP ABSENSI BULANAN GEMAR MENGAJI', pageWidth/2, 18, { align: 'center' });
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text('SDIT Harapan Umat Karawang', pageWidth/2, 26, { align: 'center' });
+    doc.setFontSize(10);
+    doc.text('Jl. Pakuncen No. 01, Desa Sukaharja, Kec. Teluk Jambe Timur', pageWidth/2, 32, { align: 'center' });
+    doc.setLineWidth(0.5);
+    doc.line(15, 36, pageWidth-15, 36);
+
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Guru: ${reportTeacherText}`, 20, 44);
+    doc.text(`Kelas: ${reportClassText}`, 20, 50);
+    doc.text(`Bulan: ${monthName} ${year}`, 20, 56);
+    doc.text(`Tanggal Cetak: ${tanggalCetak}`, 20, 62);
+
+    // Tambahkan info rata-rata kehadiran
+    doc.text(`Rata-rata Kehadiran: ${averagePercent.toFixed(2)}%`, 20, 68);
+
+    // Table
+    doc.autoTable({
+        head: [headers],
+        body: rows,
+        startY: 75,
+        theme: 'grid',
+        margin: { left: 10, right: 10 },
+        tableWidth: 'auto',
+        styles: {
+            fontSize: 7,
+            cellPadding: 1,
+            halign: 'center',
+            valign: 'middle'
+        },
+        headStyles: {
+            fillColor: [255, 255, 255],
+            textColor: [0,0,0],
+            fontStyle: 'bold'
+        },
+        columnStyles: {
+            0: { cellWidth: 40, halign: 'left' },
+            ...Object.fromEntries(Array(daysInMonth).fill().map((_, i) => [i + 1, { cellWidth: 6 }])),
+            [daysInMonth + 1]: { cellWidth: 6 },
+            [daysInMonth + 2]: { cellWidth: 6 },
+            [daysInMonth + 3]: { cellWidth: 6 },
+            [daysInMonth + 4]: { cellWidth: 10 },
+        },
+        pageBreak: 'auto',
+    });
+
+    // Keterangan
+    let yKet = doc.lastAutoTable.finalY + 6;
+    doc.setFontSize(10);
+    doc.text('Keterangan: H = Hadir, S = Sakit, I = Izin, - = Alpha', 20, yKet);
+
+    // Footer
+    let yFooter = yKet + 20;
+    doc.setFontSize(11);
+    doc.text('Mengetahui,', 30, yFooter);
+    doc.text('Kepala Sekolah', 30, yFooter + 7);
+    doc.text('(.............................)', 30, yFooter + 25);
+
+    doc.text(`Karawang, ${tanggalCetak}`, pageWidth-67, yFooter);
+    doc.text('Guru Kelas', pageWidth-67, yFooter + 7);
+    doc.text(reportTeacherText, pageWidth-67, yFooter + 25);
+    doc.line(pageWidth-77, yFooter + 28, pageWidth-17, yFooter + 28);
+
+    // Save PDF
+    const filename = `rekap_absensi_${monthName.toLowerCase()}_${year}_${reportClassText.replace(/\s+/g, '_').toLowerCase()}.pdf`;
+    doc.save(filename);
+
+    showNotification('success', 'Laporan berhasil diunduh dalam format PDF!');
+}
         
         // Show Notification
         function showNotification(type, message) {
