@@ -1897,6 +1897,15 @@ document.querySelectorAll('.save-btn').forEach((saveBtn) => {
             const teacher = filterTeacher.value;
             const classNumber = filterClassNumber.value;
             const className = filterClassName.value;
+
+            // Tampilkan tabel data absensi (admin panel) HANYA jika guru dan kelas sudah dipilih
+    // (kelas bisa classNumber atau className)
+    const isClassSelected = (classNumber && classNumber !== '') || (className && className !== '');
+    if (teacher && teacher !== '' && isClassSelected) {
+        document.querySelector('.admin-panel.mb-8').style.display = 'block';
+    } else {
+        document.querySelector('.admin-panel.mb-8').style.display = 'none';
+    }
             
             // Check if we have enough filters to show the monthly report
             const showMonthlyReport = month && (classNumber || className);
