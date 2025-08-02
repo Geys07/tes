@@ -1897,14 +1897,30 @@ document.querySelectorAll('.save-btn').forEach((saveBtn) => {
             const teacher = filterTeacher.value;
             const classNumber = filterClassNumber.value;
             const className = filterClassName.value;
+            const guruDipilih = filterTeacher.value;
+            const kelasDipilih = filterClassNumber.value || filterClassName.value;
+            const adminPanelDataAbsensi = document.querySelectorAll('.admin-panel.mb-8')[1]; // Panel kedua
 
-            // Tampilkan tabel data absensi (admin panel) HANYA jika guru dan kelas sudah dipilih
-    // (kelas bisa classNumber atau className)
-    const isClassSelected = (classNumber && classNumber !== '') || (className && className !== '');
-    if (teacher && teacher !== '' && isClassSelected) {
-        document.querySelector('.admin-panel.mb-8').style.display = 'block';
+            // --- Logika tampil/sembunyikan panel Data Absensi ---
+    if (!guruDipilih || !kelasDipilih) {
+        adminPanelDataAbsensi.style.display = 'none';
+
+        // Opsional: tampilkan pesan jika panel disembunyikan
+        let notice = document.getElementById('absensiNotice');
+        if (!notice) {
+            notice = document.createElement('div');
+            notice.id = 'absensiNotice';
+            notice.className = 'text-center text-gray-500 my-4';
+            notice.innerText = 'Silakan pilih Guru dan Kelas untuk melihat data absensi.';
+            adminPanelDataAbsensi.parentNode.insertBefore(notice, adminPanelDataAbsensi);
+        }
+        notice.style.display = '';
+        return; // Hentikan proses, jangan render data absensi
     } else {
-        document.querySelector('.admin-panel.mb-8').style.display = 'none';
+        adminPanelDataAbsensi.style.display = '';
+        // Sembunyikan pesan jika ada
+        const notice = document.getElementById('absensiNotice');
+        if (notice) notice.style.display = 'none';
     }
             
             // Check if we have enough filters to show the monthly report
