@@ -759,55 +759,60 @@
                 </div>
             </div>
             
-            <!-- Perubahan: Menyembunyikan tabel data absensi pada admin panel -->
-
-<!-- Cari bagian: Data Absensi -->
-<div class="admin-panel mb-8" style="display:none;">
-    <h3 class="text-xl font-semibold text-blue-800 mb-4">Data Absensi</h3>
-    <div class="overflow-x-auto">
-        <table class="attendance-table">
-            <thead>
-                <tr>
-                    <th class="rounded-tl-lg">Tanggal</th>
-                    <th>Guru</th>
-                    <th>Kelas</th>
-                    <th>Nama Siswa</th>
-                    <th>Status</th>
-                    <th class="rounded-tr-lg">Catatan</th>
-                </tr>
-            </thead>
-            <tbody id="adminDataList">
-                <!-- Admin data will be loaded here -->
-                <tr>
-                    <td colspan="6" class="py-8 text-center">
-                        <div class="w-full h-12 rounded shimmer mb-2"></div>
-                        <div class="w-full h-12 rounded shimmer mb-2"></div>
-                        <div class="w-full h-12 rounded shimmer"></div>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-    <div class="mt-4 flex justify-between items-center">
-        <div class="text-sm text-gray-600">
-            Menampilkan <span id="recordCount">0</span> data
-        </div>
-        <div class="flex space-x-2">
-            <button id="prevPage" class="px-3 py-1 bg-gray-100 text-gray-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                </svg>
-            </button>
-            <span id="pageIndicator" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-md">1</span>
-            <button id="nextPage" class="px-3 py-1 bg-gray-100 text-gray-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                </svg>
-            </button>
-        </div>
-    </div>
-</div>
-<!-- Tabel absensi admin kini disembunyikan (display:none) -->
+            <div class="admin-panel mb-8">
+                <h3 class="text-xl font-semibold text-blue-800 mb-4">Filter Data Absensi</h3>
+                
+                <div class="filter-container">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="filter-group">
+                            <label for="filterMonth" class="filter-label">Bulan</label>
+                            <select id="filterMonth" class="filter-select">
+                                <option value="">Pilih Bulan</option>
+                                <option value="01">Januari</option>
+                                <option value="02">Februari</option>
+                                <option value="03">Maret</option>
+                                <option value="04">April</option>
+                                <option value="05">Mei</option>
+                                <option value="06">Juni</option>
+                                <option value="07">Juli</option>
+                                <option value="08">Agustus</option>
+                                <option value="09">September</option>
+                                <option value="10">Oktober</option>
+                                <option value="11">November</option>
+                                <option value="12">Desember</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filterTeacher" class="filter-label">Guru</label>
+                            <select id="filterTeacher" class="filter-select">
+                                <option value="">Semua Guru</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filterClassNumber" class="filter-label">Tingkat Kelas</label>
+                            <select id="filterClassNumber" class="filter-select">
+                                <option value="">Semua Tingkat</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-group" id="filterClassNameContainer">
+                        <label for="filterClassName" class="filter-label">Nama Kelas</label>
+                        <select id="filterClassName" class="filter-select">
+                            <option value="">Semua Nama Kelas</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex flex-col md:flex-row gap-4 mt-4">
+                        <button id="filterBtn" class="filter-button bg-blue-600 hover:bg-blue-700 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd" />
+                            </svg>
+                            Terapkan Filter
+                        </button>
+                    </div>
+                </div>
+            </div>
             
             <!-- Monthly Attendance Report -->
             <div id="reportContainer" class="admin-panel mb-8" style="display: none;">
@@ -1903,29 +1908,35 @@ document.querySelectorAll('.save-btn').forEach((saveBtn) => {
                 reportContainer.style.display = 'none';
             }
             
-            // Filter attendance data based on selected filters
-filteredAttendanceData = attendanceData.filter(record => {
-    let match = true;
+            // Tambahkan fungsi util di atas jika belum ada
+function getTodayDate() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
 
-    // Filter by month
-    if (month && !record.date.startsWith(`${new Date().getFullYear()}-${month}`)) {
-        match = false;
-    }
+// Filter attendance data based on selected filters, TAPI hanya hari ini
+filteredAttendanceData = attendanceData.filter(record => {
+    // Hanya data absensi hari ini saja
+    if (record.date !== getTodayDate()) return false;
+
+    // Filter by month (optional, bisa dilewatkan jika hanya hari ini)
+    if (month && !record.date.startsWith(`${new Date().getFullYear()}-${month}`)) return false;
 
     // Filter by teacher
-    if (teacher && record.teacher !== teacher) {
-        match = false;
-    }
+    if (teacher && record.teacher !== teacher) return false;
 
     // PATCH: Prioritaskan exact match nama kelas
     if (className && className !== '') {
-        if (record.class.toLowerCase() !== className.toLowerCase()) match = false;
+        if (record.class.toLowerCase() !== className.toLowerCase()) return false;
     } else if (classNumber && classNumber !== '') {
         const recordClassNumber = extractClassNumber(record.class);
-        if (recordClassNumber !== classNumber) match = false;
+        if (recordClassNumber !== classNumber) return false;
     }
 
-    return match;
+    return true;
 });
 
     console.log('filteredAttendanceData:', filteredAttendanceData);        
@@ -2294,9 +2305,10 @@ if (dateToCheck <= today) {
                         }
                     } else {
                         // If no record found and date is in the past, count as alpha
-                        if (dateToCheck <= today && dateToCheck.getDay() !== 0 && dateToCheck.getDay() !== 6) {
-                            alphaCount++;
-                        }
+                        // Kode baru: alpha dihitung di semua hari (termasuk Sabtu dan Minggu)
+if (dateToCheck <= today) {
+    alphaCount++;
+}
                     }
                     
                     row.push(statusCode);
