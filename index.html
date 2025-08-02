@@ -2651,9 +2651,6 @@ function exportAttendanceToPDF() {
     let footerHeight = 30; // tinggi footer
     let minFooterY = pageHeight - footerHeight;
 
-    // Jika keterangan terlalu dekat/tumpang tindih footer, geser ke atas
-    if (keteranganY > minFooterY - 10) {
-        keteranganY = minFooterY - 10;
     }
 
     // Keterangan
