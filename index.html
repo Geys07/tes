@@ -2324,6 +2324,17 @@ function generateMonthlyReport(month, teacher, classNumber, className) {
     monthlyReportTable.innerHTML = tableHTML;
 }
 
+function formatTanggalCetak(dateObj) {
+    const hari = String(dateObj.getDate()).padStart(2, '0');
+    const bulanIndex = dateObj.getMonth(); // 0-11
+    const tahun = dateObj.getFullYear();
+    const namaBulan = [
+        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ][bulanIndex];
+    return `${hari} ${namaBulan} ${tahun}`;
+}
+        
 function printAttendanceReport() {
     // Ambil data yang sama persis seperti exportAttendanceToPDF
     const month = filterMonth.value;
@@ -2333,7 +2344,7 @@ function printAttendanceReport() {
     const monthName = getMonthName(month);
     const year = new Date().getFullYear();
     const now = new Date();
-    const tanggalCetak = `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
+    const tanggalCetak = formatTanggalCetak(now);
     const reportTeacherText = teacher || 'Semua Guru';
     const reportClassText = className || (classNumber ? `Kelas ${classNumber}` : 'Semua Kelas');
 
