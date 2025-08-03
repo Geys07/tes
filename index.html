@@ -2445,19 +2445,19 @@ function printAttendanceReport() {
       </table>
       <div style="font-size:10pt; margin-bottom:15px;">Keterangan: H = Hadir, S = Sakit, I = Izin, - = Alpha</div>
       <div style="display:flex; justify-content:space-between; margin-top:40px; font-size:11pt;">
-  <div style="width:40%; text-align:center;">
-      Mengetahui,<br>
-      Kepala Sekolah<br><br><br>
-      <hr style="width:80%; margin:auto;">
-      <div style="margin-top:-8px; font-weight:bold;">Kepala Sekolah</div>
-      <div>(.............................)</div>
-  </div>
-  <div style="width:40%; text-align:center;">
-      Karawang, ${tanggalCetak}<br><br><br>
-      <hr style="width:80%; margin:auto;">
-      <div style="margin-top:-8px; font-weight:bold;">Guru</div>
-  </div>
-</div>
+        <div style="width:40%; text-align:center;">
+            Mengetahui,<br>
+            Kepala SDIT<br><br><br>
+            <div style="height:12px;"></div>
+            <div style="margin-top:15px;">(<span style="border-bottom:2px dotted #000; padding:0 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>)</div>
+        </div>
+        <div style="width:40%; text-align:center;">
+            Karawang, ${tanggalCetak}<br><br>
+            Guru Bidang Studi<br><br><br>
+            <div style="height:12px;"></div>
+            <div style="margin-top:15px;">(<span style="border-bottom:2px dotted #000; padding:0 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>)</div>
+        </div>
+        </div>
     </div>
     `;
 
@@ -2859,7 +2859,7 @@ function exportAttendanceToPDF() {
                 const username = document.getElementById('username').value;
                 const password = document.getElementById('password').value;
                 
-                if (username === 'admin' && password === 'admin') {
+                if (username === 'admin' && password === 'gurutahta') {
                     isAdmin = true;
                     showNotification('success', 'Login berhasil!');
                     closeLoginModal();
